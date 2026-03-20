@@ -38,6 +38,39 @@ function Invoke-External {
   return $exitCode
 }
 
+function Invoke-ExternalCapture {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$FilePath,
+    [Parameter()]
+    [string[]]$ArgumentList = @()
+  )
+
+  $psi = [System.Diagnostics.ProcessStartInfo]::new()
+  $psi.FileName = $FilePath
+  foreach ($arg in $ArgumentList) {
+    [void]$psi.ArgumentList.Add($arg)
+  }
+  $psi.RedirectStandardOutput = $true
+  $psi.RedirectStandardError = $true
+  $psi.UseShellExecute = $false
+  $psi.CreateNoWindow = $true
+  $psi.WorkingDirectory = (Get-Location).Path
+
+  $proc = [System.Diagnostics.Process]::new()
+  $proc.StartInfo = $psi
+  [void]$proc.Start()
+  $stdout = $proc.StandardOutput.ReadToEnd()
+  $stderr = $proc.StandardError.ReadToEnd()
+  $proc.WaitForExit()
+
+  return [pscustomobject]@{
+    ExitCode = $proc.ExitCode
+    StdOut = $stdout
+    StdErr = $stderr
+  }
+}
+
 function Validate-ExtensionBasic {
   $requiredFiles = @(
     'manifest.json',
@@ -300,20 +333,16 @@ if ($hasChanges) {
 $repoFull = "$Owner/$Repo"
 
 Write-Host "Checking whether repository $repoFull already exists..."
-$repoExists = $true
-$oldNativeErrorPreference = $null
-if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
-  $oldNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
-  $PSNativeCommandUseErrorActionPreference = $false
-}
-try {
-  & gh repo view $repoFull 1>$null 2>$null
-  if ($LASTEXITCODE -ne 0) {
+$repoExistsResult = Invoke-ExternalCapture 'gh' @('repo', 'view', $repoFull, '--json', 'name')
+$repoExists = $false
+if ($repoExistsResult.ExitCode -eq 0) {
+  $repoExists = $true
+} else {
+  $repoError = ($repoExistsResult.StdErr + "`n" + $repoExistsResult.StdOut).Trim()
+  if ($repoError -match 'Could not resolve to a Repository' -or $repoError -match 'HTTP 404' -or $repoError -match 'not found') {
     $repoExists = $false
-  }
-} finally {
-  if ($null -ne $oldNativeErrorPreference) {
-    $PSNativeCommandUseErrorActionPreference = $oldNativeErrorPreference
+  } else {
+    throw "Unable to determine whether repository $repoFull exists. GitHub CLI said: $repoError"
   }
 }
 
