@@ -183,8 +183,10 @@ function Get-SecretFindings {
   }
 
   $insideRepo = $false
-  & git rev-parse --is-inside-work-tree *> $null
-  if ($LASTEXITCODE -eq 0) { $insideRepo = $true }
+  if (Test-Path (Join-Path (Get-Location) '.git')) {
+    & git rev-parse --is-inside-work-tree 2>$null | Out-Null
+    if ($LASTEXITCODE -eq 0) { $insideRepo = $true }
+  }
 
   if ($insideRepo) {
     $revList = (& git rev-list --all) 2>$null
@@ -299,9 +301,20 @@ $repoFull = "$Owner/$Repo"
 
 Write-Host "Checking whether repository $repoFull already exists..."
 $repoExists = $true
-& gh repo view $repoFull *> $null
-if ($LASTEXITCODE -ne 0) {
-  $repoExists = $false
+$oldNativeErrorPreference = $null
+if (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+  $oldNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
+  $PSNativeCommandUseErrorActionPreference = $false
+}
+try {
+  & gh repo view $repoFull 1>$null 2>$null
+  if ($LASTEXITCODE -ne 0) {
+    $repoExists = $false
+  }
+} finally {
+  if ($null -ne $oldNativeErrorPreference) {
+    $PSNativeCommandUseErrorActionPreference = $oldNativeErrorPreference
+  }
 }
 
 if (-not $repoExists) {
