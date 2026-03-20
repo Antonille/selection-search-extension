@@ -396,20 +396,20 @@ $bodyObject = @{
   allow_force_pushes = $false
   allow_deletions = $false
   block_creations = $false
-  required_conversation_resolution = $false
+  required_conversation_resolution = $true
   lock_branch = $false
   allow_fork_syncing = $false
 }
 
 $tempJson = Join-Path $env:TEMP "selection-search-extension-branch-protection.json"
-$bodyObject | ConvertTo-Json -Depth 10 | Set-Content -Path $tempJson -Encoding UTF8
+[System.IO.File]::WriteAllText($tempJson, ($bodyObject | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
 
 try {
 $null = Invoke-External gh @(
     'api',
     '--method', 'PUT',
     '-H', 'Accept: application/vnd.github+json',
-    '-H', 'X-GitHub-Api-Version: 2022-11-28',
+    '-H', 'X-GitHub-Api-Version: 2026-03-10',
     "/repos/$repoFull/branches/$DefaultBranch/protection",
     '--input', $tempJson
   )
