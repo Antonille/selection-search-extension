@@ -38,6 +38,22 @@ function Invoke-External {
   return $exitCode
 }
 
+function Convert-ToCommandLineArgument {
+  param(
+    [Parameter(Mandatory = $true)]
+    [AllowEmptyString()]
+    [string]$Value
+  )
+
+  if ($Value -notmatch '[\s"]') {
+    return $Value
+  }
+
+  $escaped = $Value -replace '(\\*)"', '$1$1\\"'
+  $escaped = $escaped -replace '(\\+)$', '$1$1'
+  return '"' + $escaped + '"'
+}
+
 function Invoke-ExternalCapture {
   param(
     [Parameter(Mandatory = $true)]
@@ -46,18 +62,16 @@ function Invoke-ExternalCapture {
     [string[]]$ArgumentList = @()
   )
 
-  $psi = [System.Diagnostics.ProcessStartInfo]::new()
+  $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = $FilePath
-  foreach ($arg in $ArgumentList) {
-    [void]$psi.ArgumentList.Add($arg)
-  }
+  $psi.Arguments = (($ArgumentList | ForEach-Object { Convert-ToCommandLineArgument $_ }) -join ' ')
   $psi.RedirectStandardOutput = $true
   $psi.RedirectStandardError = $true
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow = $true
   $psi.WorkingDirectory = (Get-Location).Path
 
-  $proc = [System.Diagnostics.Process]::new()
+  $proc = New-Object System.Diagnostics.Process
   $proc.StartInfo = $psi
   [void]$proc.Start()
   $stdout = $proc.StandardOutput.ReadToEnd()
@@ -266,7 +280,7 @@ Require-Command git
 Require-Command gh
 
 Write-Host "Checking GitHub authentication..."
-Invoke-External gh @('auth', 'status')
+$null = Invoke-External gh @('auth', 'status')
 
 if (Test-Command node) {
   Write-Host "Running secret scan with Node helper..."
@@ -295,13 +309,13 @@ if (Test-Command node) {
 
 if (-not (Test-Path .git)) {
   Write-Host "Initializing git repository..."
-  Invoke-External git @('init')
+  $null = Invoke-External git @('init')
 }
 
-Invoke-External git @('checkout', '-B', $DefaultBranch)
+$null = Invoke-External git @('checkout', '-B', $DefaultBranch)
 
 Write-Host "Staging files..."
-Invoke-External git @('add', '.')
+$null = Invoke-External git @('add', '.')
 
 $hasChanges = $true
 & git diff --cached --quiet
@@ -311,7 +325,7 @@ if ($LASTEXITCODE -eq 0) {
 
 if ($hasChanges) {
   try {
-    Invoke-External git @('commit', '-m', 'Initialize public repository with docs, CI, and safety checks')
+    $null = Invoke-External git @('commit', '-m', 'Initialize public repository with docs, CI, and safety checks')
   } catch {
     $nameConfigured = $true
     $emailConfigured = $true
@@ -348,7 +362,7 @@ if ($repoExistsResult.ExitCode -eq 0) {
 
 if (-not $repoExists) {
   Write-Host "Creating public repository $repoFull ..."
-  Invoke-External gh @('repo', 'create', $repoFull, '--public', '--source', '.', '--remote', 'origin', '--push')
+  $null = Invoke-External gh @('repo', 'create', $repoFull, '--public', '--source', '.', '--remote', 'origin', '--push')
 } else {
   Write-Host "Repository already exists. Ensuring origin and pushing..."
   $remoteExists = $true
@@ -358,10 +372,10 @@ if (-not $repoExists) {
   }
 
   if (-not $remoteExists) {
-    Invoke-External git @('remote', 'add', 'origin', "https://github.com/$repoFull.git")
+    $null = Invoke-External git @('remote', 'add', 'origin', "https://github.com/$repoFull.git")
   }
 
-  Invoke-External git @('push', '-u', 'origin', $DefaultBranch)
+  $null = Invoke-External git @('push', '-u', 'origin', $DefaultBranch)
 }
 
 Write-Host "Applying branch protection to $DefaultBranch ..."
@@ -391,7 +405,7 @@ $tempJson = Join-Path $env:TEMP "selection-search-extension-branch-protection.js
 $bodyObject | ConvertTo-Json -Depth 10 | Set-Content -Path $tempJson -Encoding UTF8
 
 try {
-  Invoke-External gh @(
+$null = Invoke-External gh @(
     'api',
     '--method', 'PUT',
     '-H', 'Accept: application/vnd.github+json',
