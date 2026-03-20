@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selection Search Launcher - Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Selection Search Launcher</h1>
+      <p>
+        Edit the config JSON, then click <strong>Save</strong>. The right-click menu updates automatically.
+      </p>
+
+      <section class="toolbar">
+        <button id="saveBtn">Save</button>
+        <button id="resetBtn">Reset to defaults</button>
+        <button id="exportBtn">Export JSON</button>
+        <label class="importLabel">
+          Import JSON
+          <input id="importFile" type="file" accept="application/json,.json" />
+        </label>
+      </section>
+
+      <div id="status" aria-live="polite"></div>
+
+      <textarea id="configBox" spellcheck="false"></textarea>
+
+      <section class="notes">
+        <h2>Accepted config formats</h2>
+        <ul>
+          <li>A simple top-level array of providers using <code>urlTemplate</code> and optional <code>filters</code>.</li>
+          <li>A richer object with <code>finalists</code>, like your URL-template knowledge base file.</li>
+        </ul>
+
+        <h2>Menu grouping</h2>
+        <p>
+          The extension groups entries by category first, then creates a submenu for repeated site families or domains.
+          That keeps the right-click menu from becoming a long flat list.
+        </p>
+
+        <h2>Simple provider-array example</h2>
+        <pre>[
+  {
+    "id": "google",
+    "title": "Google",
+    "enabled": true,
+    "openInBackground": false,
+    "urlTemplate": "https://www.google.com/search?q={text}",
+    "filters": {
+      "trim": true,
+      "collapseWhitespace": true,
+      "encoding": "url",
+      "regexReplacements": []
+    }
+  }
+]</pre>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

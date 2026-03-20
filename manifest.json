@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Selection Search Extension",
+  "version": "1.1.0",
+  "description": "Right-click selected text and open it with a configurable, grouped search menu.",
+  "permissions": ["contextMenus", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "minimum_chrome_version": "114"
+}

@@ -1,0 +1,1301 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-03-20",
+  "purpose": "Reusable URL-template knowledge base for an LLM or other string-to-URL search caller. Focused on language/vocabulary tools, scholarly/scientific search, and trusted official/general reference resources.",
+  "method_summary": {
+    "researched_candidate_count": 67,
+    "finalist_count": 25,
+    "selection_rule": "Finalists were chosen for high utility, clear query construction, broad coverage of the requested domains, and either direct testing or strong documentation."
+  },
+  "global_string_handling_rules": {
+    "encoding_baseline": {
+      "character_set": "UTF-8",
+      "normalize_unicode": "NFKC optional; safe for most user text before URL building.",
+      "trim_whitespace": true,
+      "collapse_internal_whitespace_default": true,
+      "default_query_param_encoding": "application/x-www-form-urlencoded style via quote_plus (space -> '+').",
+      "default_path_segment_encoding": "Percent-encode one path segment via quote(s, safe='') (space -> '%20', '/' -> '%2F').",
+      "do_not_lowercase_by_default": true,
+      "do_not_strip_punctuation_by_default": true
+    },
+    "operator_preservation_rule": {
+      "applies_to": [
+        "PubMed",
+        "PubMed Clinical Queries",
+        "Europe PMC",
+        "arXiv search/API",
+        "OpenAlex",
+        "Crossref",
+        "JSTOR",
+        "GitHub search",
+        "openFDA",
+        "Wikipedia Special:Search"
+      ],
+      "instruction": "When the endpoint supports field tags, quotes, Boolean operators, wildcards, ranges, or other query syntax, preserve those operators in the logical query string and percent-encode only when inserting into the final URL. Do not aggressively scrub punctuation inside the logical query."
+    },
+    "file_extension_rule": {
+      "applies_to": [
+        "FileInfo",
+        "similar extension-focused sites"
+      ],
+      "instruction": "For extension lookups, strip a leading dot if present, lowercase the extension, and encode as a path segment. Example: '.PDF' -> 'pdf'."
+    },
+    "phrase_handling_rule": {
+      "instruction": "For ordinary phrase search on query-parameter endpoints, trim, collapse repeated whitespace to single spaces, then quote_plus the phrase. If the site supports exact-phrase quoting and exact phrase is intended, wrap the logical phrase in double quotes before URL encoding."
+    },
+    "word_lookup_rule": {
+      "instruction": "For exact single-word dictionary/etymology lookups that use path segments, pass the original token as one path segment after trimming. Encode apostrophes, spaces, slashes, and question marks."
+    }
+  },
+  "finalists": [
+    {
+      "id": "mw_dictionary",
+      "site_name": "Merriam-Webster Dictionary",
+      "label": "English dictionary / exact headword lookup",
+      "category": "language_vocabulary",
+      "query_modes": [
+        "word",
+        "short phrase"
+      ],
+      "result_format": "html",
+      "url_template": "https://www.merriam-webster.com/dictionary/{path_term}",
+      "example_url": "https://www.merriam-webster.com/dictionary/algorithm",
+      "string_prep": {
+        "mode": "path_segment",
+        "steps": [
+          "trim",
+          "keep case",
+          "do not strip apostrophes or punctuation",
+          "percent-encode one path segment"
+        ],
+        "python_hint": "quote(term, safe='')"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Best for exact dictionary-style lookup.",
+      "supporting_evidence_urls": [
+        "https://www.merriam-webster.com/dictionary/algorithm",
+        "https://www.merriam-webster.com/"
+      ]
+    },
+    {
+      "id": "mw_thesaurus",
+      "site_name": "Merriam-Webster Thesaurus",
+      "label": "Synonyms / antonyms / related words",
+      "category": "language_vocabulary",
+      "query_modes": [
+        "word",
+        "short phrase"
+      ],
+      "result_format": "html",
+      "url_template": "https://www.merriam-webster.com/thesaurus/{path_term}",
+      "example_url": "https://www.merriam-webster.com/thesaurus/robust",
+      "string_prep": {
+        "mode": "path_segment",
+        "steps": [
+          "trim",
+          "percent-encode one path segment"
+        ],
+        "python_hint": "quote(term, safe='')"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Use when synonym/antonym intent is explicit.",
+      "supporting_evidence_urls": [
+        "https://www.merriam-webster.com/thesaurus/robust",
+        "https://www.merriam-webster.com/"
+      ]
+    },
+    {
+      "id": "cambridge_dictionary",
+      "site_name": "Cambridge Dictionary",
+      "label": "Learner-friendly English dictionary",
+      "category": "language_vocabulary",
+      "query_modes": [
+        "word",
+        "short phrase"
+      ],
+      "result_format": "html",
+      "url_template": "https://dictionary.cambridge.org/us/dictionary/english/{path_term}",
+      "example_url": "https://dictionary.cambridge.org/us/dictionary/english/tensor",
+      "string_prep": {
+        "mode": "path_segment",
+        "steps": [
+          "trim",
+          "percent-encode one path segment"
+        ],
+        "python_hint": "quote(term, safe='')"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Good secondary dictionary, especially for learner-oriented definitions and pronunciation.",
+      "supporting_evidence_urls": [
+        "https://dictionary.cambridge.org/us/dictionary/english/tensor",
+        "https://dictionary.cambridge.org/us/dictionary/english/"
+      ]
+    },
+    {
+      "id": "etymonline_word",
+      "site_name": "Online Etymology Dictionary",
+      "label": "Etymology / word origin / word history",
+      "category": "language_vocabulary",
+      "query_modes": [
+        "word"
+      ],
+      "result_format": "html",
+      "url_template": "https://www.etymonline.com/word/{path_term}",
+      "example_url": "https://www.etymonline.com/word/algorithm",
+      "string_prep": {
+        "mode": "path_segment",
+        "steps": [
+          "trim",
+          "prefer a single lexical item",
+          "percent-encode one path segment"
+        ],
+        "python_hint": "quote(term, safe='')"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Best for etymology among the finalists.",
+      "supporting_evidence_urls": [
+        "https://www.etymonline.com/word/algorithm",
+        "https://www.etymonline.com/"
+      ]
+    },
+    {
+      "id": "wiktionary_entry",
+      "site_name": "Wiktionary",
+      "label": "Exact term lookup with multilingual and morphological context",
+      "category": "language_vocabulary",
+      "query_modes": [
+        "word",
+        "phrase",
+        "inflected_form"
+      ],
+      "result_format": "html",
+      "url_template": "https://en.wiktionary.org/wiki/{path_term}",
+      "example_url": "https://en.wiktionary.org/wiki/tensor",
+      "string_prep": {
+        "mode": "path_segment",
+        "steps": [
+          "trim",
+          "percent-encode one path segment"
+        ],
+        "python_hint": "quote(term, safe='')"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Useful when morphology, alternate forms, or multilingual sense inventory matters.",
+      "supporting_evidence_urls": [
+        "https://en.wiktionary.org/wiki/tensor",
+        "https://en.wiktionary.org/wiki/Help:Searching"
+      ]
+    },
+    {
+      "id": "wikipedia_special_search",
+      "site_name": "Wikipedia Special:Search",
+      "label": "General knowledge search with title redirect on exact match",
+      "category": "general_knowledge",
+      "query_modes": [
+        "word",
+        "phrase",
+        "title",
+        "subject"
+      ],
+      "result_format": "html",
+      "url_template": "https://en.wikipedia.org/w/index.php?search={query}&title=Special%3ASearch&ns0=1",
+      "example_url": "https://en.wikipedia.org/w/index.php?search=finite+element+analysis&title=Special%3ASearch&ns0=1",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus the full query"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Wikipedia may redirect to a title page when it finds an exact title match; otherwise it yields search results.",
+      "supporting_evidence_urls": [
+        "https://en.wikipedia.org/wiki/Help:Searching",
+        "https://en.wikipedia.org/w/index.php?search=finite+element+analysis&title=Special%3ASearch&ns0=1"
+      ]
+    },
+    {
+      "id": "onelook_general",
+      "site_name": "OneLook",
+      "label": "Dictionary aggregator / reverse dictionary / pattern search / misspelling-adjacent discovery",
+      "category": "language_vocabulary",
+      "query_modes": [
+        "word",
+        "phrase",
+        "reverse_dictionary",
+        "pattern",
+        "crossword_like",
+        "fuzzy_vocabulary_search"
+      ],
+      "result_format": "html",
+      "url_template": "https://www.onelook.com/?w={query}",
+      "example_url": "https://www.onelook.com/?w=search+algorithm",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "preserve pattern syntax if used (* ? # @ // minus/plus suffixes, or pattern:meaning)",
+          "otherwise collapse whitespace and quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_with_caveat",
+      "confidence": "medium_high",
+      "notes": "Very useful for unknown/misspelled/contextual word hunting. May present JavaScript/CAPTCHA friction to automated clients. Same endpoint also supports reverse-dictionary and pattern syntax.",
+      "supporting_evidence_urls": [
+        "https://www.onelook.com/thesaurus/",
+        "https://www.onelook.com/?loc=olthes1&w=standard+algorithm"
+      ]
+    },
+    {
+      "id": "pubmed_search",
+      "site_name": "PubMed",
+      "label": "Biomedical literature search",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "author",
+        "title",
+        "subject",
+        "citation",
+        "medical_topic"
+      ],
+      "result_format": "html",
+      "url_template": "https://pubmed.ncbi.nlm.nih.gov/?term={query}",
+      "example_url": "https://pubmed.ncbi.nlm.nih.gov/?term=diabetes+hypertension",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "preserve PubMed operators/field tags/quotes if present",
+          "otherwise collapse whitespace and quote_plus the query"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "PubMed citation sensor can often recover from imperfect citation strings and some incorrect terms.",
+      "supporting_evidence_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/help/",
+        "https://pubmed.ncbi.nlm.nih.gov/"
+      ]
+    },
+    {
+      "id": "pubmed_clinical_queries",
+      "site_name": "PubMed Clinical Queries",
+      "label": "Clinical evidence-focused PubMed search",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "phrase",
+        "medical_topic",
+        "clinical_question"
+      ],
+      "result_format": "html",
+      "url_template": "https://pubmed.ncbi.nlm.nih.gov/clinical/?term={query}",
+      "example_url": "https://pubmed.ncbi.nlm.nih.gov/clinical/?term=hypertension+diabetes",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "preserve logical/quoted query if present",
+          "otherwise collapse whitespace and quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "Use when the intent is clinical evidence rather than general biomed indexing.",
+      "supporting_evidence_urls": [
+        "https://pubmed.ncbi.nlm.nih.gov/clinical/",
+        "https://pubmed.ncbi.nlm.nih.gov/help/"
+      ]
+    },
+    {
+      "id": "medlineplus_webservice",
+      "site_name": "MedlinePlus Web Service",
+      "label": "Consumer health topic retrieval from NIH/NLM",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "medical_topic",
+        "word",
+        "phrase"
+      ],
+      "result_format": "xml",
+      "url_template": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term={query}",
+      "example_url": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term=diabetes",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "Machine-readable XML; useful when a safer, patient-oriented medical topic source is preferable to journal literature.",
+      "supporting_evidence_urls": [
+        "https://medlineplus.gov/about/developers/webservices/",
+        "https://medlineplus.gov/about/using/searchtips/"
+      ]
+    },
+    {
+      "id": "europe_pmc_search",
+      "site_name": "Europe PMC",
+      "label": "Life sciences literature search",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "author",
+        "title",
+        "subject",
+        "grant_related"
+      ],
+      "result_format": "html",
+      "url_template": "https://europepmc.org/search?query={query}",
+      "example_url": "https://europepmc.org/search?query=CRISPR%20Cas9",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "preserve query syntax if used",
+          "otherwise collapse whitespace and quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "Strong complement to PubMed; good global life-sciences coverage.",
+      "supporting_evidence_urls": [
+        "https://europepmc.org/",
+        "https://europepmc.org/advancesearch"
+      ]
+    },
+    {
+      "id": "arxiv_search",
+      "site_name": "arXiv search",
+      "label": "Open preprint search across many scientific and technical fields",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "author",
+        "title",
+        "subject"
+      ],
+      "result_format": "html",
+      "url_template": "https://arxiv.org/search/?query={query}&searchtype=all",
+      "example_url": "https://arxiv.org/search/?query=large+language+model&searchtype=all",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "usually collapse whitespace and quote_plus",
+          "advanced usage may preserve arXiv-style boolean expressions"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested",
+      "confidence": "high",
+      "notes": "Best open starting point for recent ML/AI/algorithms work.",
+      "supporting_evidence_urls": [
+        "https://arxiv.org/search/?query=large+language+model&searchtype=all",
+        "https://info.arxiv.org/help/find.html"
+      ]
+    },
+    {
+      "id": "openalex_works_search",
+      "site_name": "OpenAlex Works API",
+      "label": "Scholarly works search API",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "author_related",
+        "subject"
+      ],
+      "result_format": "json",
+      "url_template": "https://api.openalex.org/works?search={query}",
+      "example_url": "https://api.openalex.org/works?search=graph+neural+network",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "usually collapse whitespace and quote_plus",
+          "preserve OpenAlex search syntax when intentionally used"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "Machine-readable and broad; excellent for LLM ingestion.",
+      "supporting_evidence_urls": [
+        "https://developers.openalex.org/guides/searching",
+        "https://developers.openalex.org/api-reference/introduction"
+      ]
+    },
+    {
+      "id": "crossref_works_query_bibliographic",
+      "site_name": "Crossref Works API",
+      "label": "Crossref bibliographic metadata search",
+      "category": "scientific_medical_literature",
+      "query_modes": [
+        "phrase",
+        "title",
+        "author",
+        "bibliographic_citation",
+        "subject"
+      ],
+      "result_format": "json",
+      "url_template": "https://api.crossref.org/works?query.bibliographic={query}",
+      "example_url": "https://api.crossref.org/works?query.bibliographic=quantum+computing",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "preserve intended bibliographic text",
+          "quote_plus the final bibliographic query"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "Good for DOI-oriented and bibliographic retrieval.",
+      "supporting_evidence_urls": [
+        "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "https://www.crossref.org/documentation/retrieve-metadata/rest-api/tips-for-using-the-crossref-rest-api/"
+      ]
+    },
+    {
+      "id": "nasa_ntrs_search",
+      "site_name": "NASA Technical Reports Server (NTRS)",
+      "label": "NASA aerospace and engineering literature search",
+      "category": "scientific_engineering_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "title",
+        "author",
+        "subject",
+        "aerospace_engineering"
+      ],
+      "result_format": "html",
+      "url_template": "https://ntrs.nasa.gov/search?q={query}",
+      "example_url": "https://ntrs.nasa.gov/search?q=finite+element+analysis",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "Very strong for aerospace engineering, NASA technical reports, and some space systems software/analysis topics.",
+      "supporting_evidence_urls": [
+        "https://ntrs.nasa.gov/search?q=lsda",
+        "https://ntrs.nasa.gov/search"
+      ]
+    },
+    {
+      "id": "jstor_basic_search",
+      "site_name": "JSTOR basic search",
+      "label": "Humanities/social sciences and some interdisciplinary journal/book search",
+      "category": "scientific_scholarly_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "title",
+        "author",
+        "subject"
+      ],
+      "result_format": "html",
+      "url_template": "https://www.jstor.org/action/doBasicSearch?Query={query}",
+      "example_url": "https://www.jstor.org/action/doBasicSearch?Query=machine+translation",
+      "string_prep": {
+        "mode": "query_param_operator_preserving",
+        "steps": [
+          "trim",
+          "preserve quotes if exact phrase is wanted",
+          "otherwise collapse whitespace and quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "medium_high",
+      "notes": "Useful but not as open-machine-friendly as arXiv/OpenAlex/Crossref.",
+      "supporting_evidence_urls": [
+        "https://support.jstor.org/hc/en-us/articles/360000063528-An-Introduction-to-Searching-on-JSTOR",
+        "https://www.jstor.org/stable/community.24796996?Search=yes&ab_segments=0%2Fbasic_search_gsv2%2Fcontrol&refreqid=fastly-default%3A4a3fdaa0e3a0e4b5b8975ac86367c7a2&resultItemClick=true&searchText=bournville&searchUri=%2Faction%2FdoBasicSearch%3FQuery%3Dbournville&searchkey=1645626062671&seq=1"
+      ]
+    },
+    {
+      "id": "doaj_articles_search",
+      "site_name": "DOAJ article search",
+      "label": "Open-access journal/article discovery",
+      "category": "scientific_scholarly_literature",
+      "query_modes": [
+        "word",
+        "phrase",
+        "title",
+        "subject",
+        "publisher"
+      ],
+      "result_format": "html",
+      "url_template": "https://doaj.org/search/articles/{path_term}",
+      "example_url": "https://doaj.org/search/articles/machine%20learning",
+      "string_prep": {
+        "mode": "path_like_search_string",
+        "steps": [
+          "trim",
+          "percent-encode path component",
+          "keep spaces as %20"
+        ],
+        "python_hint": "quote(query, safe='')"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "medium_high",
+      "notes": "DOAJ quick search is prominently documented on the home page. Path-style article search URL is widely used, but less explicitly documented than some API endpoints.",
+      "supporting_evidence_urls": [
+        "https://doaj.org/",
+        "https://doaj.org/search/articles"
+      ]
+    },
+    {
+      "id": "python_docs_search",
+      "site_name": "Python official docs search",
+      "label": "Python documentation search",
+      "category": "programming_docs",
+      "query_modes": [
+        "word",
+        "phrase",
+        "function_name",
+        "module_name",
+        "concept"
+      ],
+      "result_format": "html",
+      "url_template": "https://docs.python.org/3.14/search.html?q={query}",
+      "example_url": "https://docs.python.org/3.14/search.html?q=urllib.parse",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "OpenSearch template for Python docs explicitly publishes this URL pattern.",
+      "supporting_evidence_urls": [
+        "https://docs.python.org/3/_static/opensearch.xml",
+        "https://docs.python.org/3.9/search.html?area=default&check_keywords=yes&q=cgi"
+      ]
+    },
+    {
+      "id": "numpy_docs_search",
+      "site_name": "NumPy docs search",
+      "label": "NumPy documentation search",
+      "category": "programming_docs",
+      "query_modes": [
+        "word",
+        "phrase",
+        "function_name",
+        "module_name",
+        "concept"
+      ],
+      "result_format": "html",
+      "url_template": "https://numpy.org/doc/stable/search.html?q={query}",
+      "example_url": "https://numpy.org/doc/stable/search.html?q=einsum",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "Search results are rendered via Sphinx search page.",
+      "supporting_evidence_urls": [
+        "https://numpy.org/doc/stable/search.html?q=numpy.where",
+        "https://numpy.org/doc/stable/search.html?q=Indexing"
+      ]
+    },
+    {
+      "id": "scipy_docs_search",
+      "site_name": "SciPy docs search",
+      "label": "SciPy documentation search",
+      "category": "programming_docs",
+      "query_modes": [
+        "word",
+        "phrase",
+        "function_name",
+        "module_name",
+        "concept"
+      ],
+      "result_format": "html",
+      "url_template": "https://docs.scipy.org/doc/scipy/search.html?q={query}",
+      "example_url": "https://docs.scipy.org/doc/scipy/search.html?q=sparse.linalg",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "Search results are rendered via Sphinx search page.",
+      "supporting_evidence_urls": [
+        "https://docs.scipy.org/doc/scipy/search.html?q=scipy.sparse.spdiags",
+        "https://docs.scipy.org/doc/scipy/search.html?q=scipy.stats.qmc.Halton"
+      ]
+    },
+    {
+      "id": "pytorch_docs_search",
+      "site_name": "PyTorch docs search",
+      "label": "PyTorch documentation search",
+      "category": "programming_docs",
+      "query_modes": [
+        "word",
+        "phrase",
+        "API_name",
+        "class_name",
+        "concept"
+      ],
+      "result_format": "html",
+      "url_template": "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q={query}",
+      "example_url": "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q=DistributedDataParallel",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "PyTorch search page works, although it warns that JavaScript improves the experience.",
+      "supporting_evidence_urls": [
+        "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q=torch.experimental",
+        "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q=dataloader"
+      ]
+    },
+    {
+      "id": "mdn_search",
+      "site_name": "MDN Web Docs search",
+      "label": "Web platform / browser API documentation search",
+      "category": "programming_docs",
+      "query_modes": [
+        "word",
+        "phrase",
+        "API_name",
+        "concept"
+      ],
+      "result_format": "html",
+      "url_template": "https://developer.mozilla.org/en-US/search?q={query}",
+      "example_url": "https://developer.mozilla.org/en-US/search?q=URLSearchParams",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "MDN itself uses /en-US/search?q=... in examples and site URLs.",
+      "supporting_evidence_urls": [
+        "https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Web_mechanics/What_is_a_URL",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Location"
+      ]
+    },
+    {
+      "id": "fileinfo_extension",
+      "site_name": "FileInfo",
+      "label": "File extension lookup",
+      "category": "file_type_lookup",
+      "query_modes": [
+        "file_extension"
+      ],
+      "result_format": "html",
+      "url_template": "https://fileinfo.com/extension/{normalized_extension}",
+      "example_url": "https://fileinfo.com/extension/pdf",
+      "string_prep": {
+        "mode": "normalized_extension_path_segment",
+        "steps": [
+          "trim",
+          "strip leading dot",
+          "lowercase",
+          "percent-encode as one path segment"
+        ],
+        "python_hint": "quote(ext.lstrip('.').lower(), safe='')"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "One of the most practical direct filetype resources.",
+      "supporting_evidence_urls": [
+        "https://fileinfo.com/extension/tpl",
+        "https://fileinfo.com/"
+      ]
+    },
+    {
+      "id": "data_gov_dataset_search",
+      "site_name": "Data.gov dataset search",
+      "label": "US government open dataset search",
+      "category": "official_government_data",
+      "query_modes": [
+        "word",
+        "phrase",
+        "subject",
+        "dataset_topic"
+      ],
+      "result_format": "html",
+      "url_template": "https://catalog.data.gov/dataset?q={query}",
+      "example_url": "https://catalog.data.gov/dataset?q=climate+change",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "tested_via_search_result",
+      "confidence": "high",
+      "notes": "Good general U.S. government dataset discovery entry point.",
+      "supporting_evidence_urls": [
+        "https://catalog.data.gov/dataset?q=business",
+        "https://resources.data.gov/catalog-api/"
+      ]
+    },
+    {
+      "id": "loc_general_search_api",
+      "site_name": "Library of Congress search API",
+      "label": "General Library of Congress search endpoint",
+      "category": "official_general_reference",
+      "query_modes": [
+        "word",
+        "phrase",
+        "title",
+        "subject",
+        "person",
+        "historical_topic"
+      ],
+      "result_format": "json",
+      "url_template": "https://www.loc.gov/search/?q={query}&fo=json",
+      "example_url": "https://www.loc.gov/search/?q=baseball&fo=json",
+      "string_prep": {
+        "mode": "query_param",
+        "steps": [
+          "trim",
+          "collapse whitespace",
+          "quote_plus"
+        ],
+        "python_hint": "quote_plus(query)"
+      },
+      "tested_status": "documented_high_confidence",
+      "confidence": "high",
+      "notes": "Useful official reference endpoint; JSON is convenient for LLM parsing.",
+      "supporting_evidence_urls": [
+        "https://www.loc.gov/apis/json-and-yaml/requests/endpoints/",
+        "https://www.loc.gov/apis/json-and-yaml/requests/parameters/"
+      ]
+    }
+  ],
+  "researched_candidates": [
+    {
+      "site_name": "Merriam-Webster Dictionary",
+      "status": "accepted_finalist",
+      "category": "language_vocabulary",
+      "url_template": "https://www.merriam-webster.com/dictionary/{path_term}",
+      "notes": "Best for exact dictionary-style lookup."
+    },
+    {
+      "site_name": "Merriam-Webster Thesaurus",
+      "status": "accepted_finalist",
+      "category": "language_vocabulary",
+      "url_template": "https://www.merriam-webster.com/thesaurus/{path_term}",
+      "notes": "Use when synonym/antonym intent is explicit."
+    },
+    {
+      "site_name": "Cambridge Dictionary",
+      "status": "accepted_finalist",
+      "category": "language_vocabulary",
+      "url_template": "https://dictionary.cambridge.org/us/dictionary/english/{path_term}",
+      "notes": "Good secondary dictionary, especially for learner-oriented definitions and pronunciation."
+    },
+    {
+      "site_name": "Online Etymology Dictionary",
+      "status": "accepted_finalist",
+      "category": "language_vocabulary",
+      "url_template": "https://www.etymonline.com/word/{path_term}",
+      "notes": "Best for etymology among the finalists."
+    },
+    {
+      "site_name": "Wiktionary",
+      "status": "accepted_finalist",
+      "category": "language_vocabulary",
+      "url_template": "https://en.wiktionary.org/wiki/{path_term}",
+      "notes": "Useful when morphology, alternate forms, or multilingual sense inventory matters."
+    },
+    {
+      "site_name": "Wikipedia Special:Search",
+      "status": "accepted_finalist",
+      "category": "general_knowledge",
+      "url_template": "https://en.wikipedia.org/w/index.php?search={query}&title=Special%3ASearch&ns0=1",
+      "notes": "Wikipedia may redirect to a title page when it finds an exact title match; otherwise it yields search results."
+    },
+    {
+      "site_name": "OneLook",
+      "status": "accepted_finalist",
+      "category": "language_vocabulary",
+      "url_template": "https://www.onelook.com/?w={query}",
+      "notes": "Very useful for unknown/misspelled/contextual word hunting. May present JavaScript/CAPTCHA friction to automated clients. Same endpoint also supports reverse-dictionary and pattern syntax."
+    },
+    {
+      "site_name": "PubMed",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://pubmed.ncbi.nlm.nih.gov/?term={query}",
+      "notes": "PubMed citation sensor can often recover from imperfect citation strings and some incorrect terms."
+    },
+    {
+      "site_name": "PubMed Clinical Queries",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://pubmed.ncbi.nlm.nih.gov/clinical/?term={query}",
+      "notes": "Use when the intent is clinical evidence rather than general biomed indexing."
+    },
+    {
+      "site_name": "MedlinePlus Web Service",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term={query}",
+      "notes": "Machine-readable XML; useful when a safer, patient-oriented medical topic source is preferable to journal literature."
+    },
+    {
+      "site_name": "Europe PMC",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://europepmc.org/search?query={query}",
+      "notes": "Strong complement to PubMed; good global life-sciences coverage."
+    },
+    {
+      "site_name": "arXiv search",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://arxiv.org/search/?query={query}&searchtype=all",
+      "notes": "Best open starting point for recent ML/AI/algorithms work."
+    },
+    {
+      "site_name": "OpenAlex Works API",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://api.openalex.org/works?search={query}",
+      "notes": "Machine-readable and broad; excellent for LLM ingestion."
+    },
+    {
+      "site_name": "Crossref Works API",
+      "status": "accepted_finalist",
+      "category": "scientific_medical_literature",
+      "url_template": "https://api.crossref.org/works?query.bibliographic={query}",
+      "notes": "Good for DOI-oriented and bibliographic retrieval."
+    },
+    {
+      "site_name": "NASA Technical Reports Server (NTRS)",
+      "status": "accepted_finalist",
+      "category": "scientific_engineering_literature",
+      "url_template": "https://ntrs.nasa.gov/search?q={query}",
+      "notes": "Very strong for aerospace engineering, NASA technical reports, and some space systems software/analysis topics."
+    },
+    {
+      "site_name": "JSTOR basic search",
+      "status": "accepted_finalist",
+      "category": "scientific_scholarly_literature",
+      "url_template": "https://www.jstor.org/action/doBasicSearch?Query={query}",
+      "notes": "Useful but not as open-machine-friendly as arXiv/OpenAlex/Crossref."
+    },
+    {
+      "site_name": "DOAJ article search",
+      "status": "accepted_finalist",
+      "category": "scientific_scholarly_literature",
+      "url_template": "https://doaj.org/search/articles/{path_term}",
+      "notes": "DOAJ quick search is prominently documented on the home page. Path-style article search URL is widely used, but less explicitly documented than some API endpoints."
+    },
+    {
+      "site_name": "Python official docs search",
+      "status": "accepted_finalist",
+      "category": "programming_docs",
+      "url_template": "https://docs.python.org/3.14/search.html?q={query}",
+      "notes": "OpenSearch template for Python docs explicitly publishes this URL pattern."
+    },
+    {
+      "site_name": "NumPy docs search",
+      "status": "accepted_finalist",
+      "category": "programming_docs",
+      "url_template": "https://numpy.org/doc/stable/search.html?q={query}",
+      "notes": "Search results are rendered via Sphinx search page."
+    },
+    {
+      "site_name": "SciPy docs search",
+      "status": "accepted_finalist",
+      "category": "programming_docs",
+      "url_template": "https://docs.scipy.org/doc/scipy/search.html?q={query}",
+      "notes": "Search results are rendered via Sphinx search page."
+    },
+    {
+      "site_name": "PyTorch docs search",
+      "status": "accepted_finalist",
+      "category": "programming_docs",
+      "url_template": "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q={query}",
+      "notes": "PyTorch search page works, although it warns that JavaScript improves the experience."
+    },
+    {
+      "site_name": "MDN Web Docs search",
+      "status": "accepted_finalist",
+      "category": "programming_docs",
+      "url_template": "https://developer.mozilla.org/en-US/search?q={query}",
+      "notes": "MDN itself uses /en-US/search?q=... in examples and site URLs."
+    },
+    {
+      "site_name": "FileInfo",
+      "status": "accepted_finalist",
+      "category": "file_type_lookup",
+      "url_template": "https://fileinfo.com/extension/{normalized_extension}",
+      "notes": "One of the most practical direct filetype resources."
+    },
+    {
+      "site_name": "Data.gov dataset search",
+      "status": "accepted_finalist",
+      "category": "official_government_data",
+      "url_template": "https://catalog.data.gov/dataset?q={query}",
+      "notes": "Good general U.S. government dataset discovery entry point."
+    },
+    {
+      "site_name": "Library of Congress search API",
+      "status": "accepted_finalist",
+      "category": "official_general_reference",
+      "url_template": "https://www.loc.gov/search/?q={query}&fo=json",
+      "notes": "Useful official reference endpoint; JSON is convenient for LLM parsing."
+    },
+    {
+      "site_name": "Dictionary.com browse",
+      "status": "researched_not_final_due_to_redundancy",
+      "category": "language_vocabulary",
+      "url_template": "https://www.dictionary.com/browse/{path_term}",
+      "notes": "Works well, but Merriam-Webster/Cambridge/Wiktionary/OneLook already covered the main dictionary needs."
+    },
+    {
+      "site_name": "Thesaurus.com browse",
+      "status": "researched_not_final_due_to_redundancy",
+      "category": "language_vocabulary",
+      "url_template": "https://www.thesaurus.com/browse/{path_term}",
+      "notes": "Useful synonyms endpoint; omitted only to keep the finalist set within the requested size."
+    },
+    {
+      "site_name": "Wordnik API",
+      "status": "excluded_requires_api_key",
+      "category": "language_vocabulary",
+      "url_template": "https://api.wordnik.com/v4/word.json/{word}/definitions?api_key={API_KEY}",
+      "notes": "Technically strong but requires an API key."
+    },
+    {
+      "site_name": "Europe PMC REST",
+      "status": "researched_not_final_due_to_overlap",
+      "category": "scientific_medical_literature",
+      "url_template": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query={query}&format=json",
+      "notes": "Excellent machine-readable companion to the HTML Europe PMC search page."
+    },
+    {
+      "site_name": "arXiv API",
+      "status": "researched_not_final_due_to_overlap",
+      "category": "scientific_scholarly_literature",
+      "url_template": "http://export.arxiv.org/api/query?search_query={query}",
+      "notes": "Very useful, but HTML arXiv search was kept as the simpler finalist."
+    },
+    {
+      "site_name": "NASA Earthdata Search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://search.earthdata.nasa.gov/search?q={query}",
+      "notes": "Very good for Earth-observation datasets; not as general as Data.gov."
+    },
+    {
+      "site_name": "USGS ScienceBase query",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://www.sciencebase.gov/catalog/items?q={query}",
+      "notes": "Documented by USGS; useful for sciencebase-hosted items and data releases."
+    },
+    {
+      "site_name": "USGS Earthquake catalog search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://earthquake.usgs.gov/earthquakes/search/",
+      "notes": "Search state stored in URL after running a query; excellent niche government dataset search."
+    },
+    {
+      "site_name": "CDC site search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://search.cdc.gov/search/?query={query}",
+      "notes": "Good official public-health site search."
+    },
+    {
+      "site_name": "openFDA drug label API",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://api.fda.gov/drug/label.json?search={field_query}",
+      "notes": "Machine-readable FDA data; very strong when drug-label lookup is needed."
+    },
+    {
+      "site_name": "FDA labels search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://labels.fda.gov/",
+      "notes": "UI-first label search entry point."
+    },
+    {
+      "site_name": "PyPI search",
+      "status": "researched_not_final_due_to_js_dependency",
+      "category": "programming_docs",
+      "url_template": "https://pypi.org/search/?q={query}",
+      "notes": "Direct URL exists but the search page may require JavaScript."
+    },
+    {
+      "site_name": "GitHub repository search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "programming_general_resources",
+      "url_template": "https://github.com/search?q={query}&type=repositories",
+      "notes": "Very useful for repo discovery, but less official-documentation-centric than the docs finalists."
+    },
+    {
+      "site_name": "DevDocs search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "programming_docs",
+      "url_template": "https://devdocs.io/#q={query}",
+      "notes": "Good documentation aggregator; omitted from finalists in favor of official docs."
+    },
+    {
+      "site_name": "Microsoft Learn docs search",
+      "status": "researched_not_final_due_to_unverified_template",
+      "category": "programming_docs",
+      "url_template": "https://learn.microsoft.com/en-us/search/?terms={query}",
+      "notes": "Likely useful, but I did not get as strong a direct-template verification as for the other finalists."
+    },
+    {
+      "site_name": "ACM Digital Library search",
+      "status": "researched_not_final_due_to_partial_verification",
+      "category": "scientific_scholarly_literature",
+      "url_template": "https://dl.acm.org/action/doSearch?AllField={query}",
+      "notes": "Likely valid, but I lacked a clean primary verification page during this pass."
+    },
+    {
+      "site_name": "IEEE Xplore search",
+      "status": "excluded_robot_access_limits_during_research",
+      "category": "scientific_engineering_literature",
+      "url_template": "https://ieeexplore.ieee.org/search/searchresult.jsp?queryText={query}",
+      "notes": "Common pattern, but the domain was blocked by robots during this research pass."
+    },
+    {
+      "site_name": "NASA ADS UI search",
+      "status": "researched_not_final_due_to_template_uncertainty",
+      "category": "scientific_engineering_literature",
+      "url_template": "https://ui.adsabs.harvard.edu/search/q={query}",
+      "notes": "ADS is excellent, but I did not get a sufficiently clean, directly documented URL pattern from the UI pages in this pass."
+    },
+    {
+      "site_name": "NASA ADS API",
+      "status": "researched_not_final_due_to_auth_or_complexity",
+      "category": "scientific_engineering_literature",
+      "url_template": "https://api.adsabs.harvard.edu/v1/search/query?q={query}",
+      "notes": "Powerful, but not as straightforward as a plain unauthenticated browser page."
+    },
+    {
+      "site_name": "RFC Editor search detail",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://www.rfc-editor.org/search/rfc_search_detail.php?title={query}",
+      "notes": "Strong niche reference for internet standards."
+    },
+    {
+      "site_name": "RFC index page",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://www.rfc-editor.org/rfc-index.html",
+      "notes": "Reference index rather than direct query endpoint."
+    },
+    {
+      "site_name": "IANA PEN lookup",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://www.iana.org/assignments/enterprise-numbers/?q={query}",
+      "notes": "Good for network/identifier registry lookups."
+    },
+    {
+      "site_name": "NVD CPE search",
+      "status": "researched_not_final_due_to_js_dependency",
+      "category": "official_general_reference",
+      "url_template": "https://nvd.nist.gov/products/cpe/search/results?namingFormat=2.3&keyword={query}",
+      "notes": "Useful for software/platform identifiers, but the site strongly prefers JavaScript."
+    },
+    {
+      "site_name": "LOC pictures search API",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://www.loc.gov/pictures/search/?q={query}&fo=json",
+      "notes": "Excellent specialized LoC image/pictures search endpoint."
+    },
+    {
+      "site_name": "Archive.org advanced search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "general_knowledge",
+      "url_template": "https://archive.org/advancedsearch.php?q={query}",
+      "notes": "Powerful but best when archival/media discovery is the goal."
+    },
+    {
+      "site_name": "Wayback Machine advanced URL search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "general_knowledge",
+      "url_template": "https://archive.org/web/web-advancedsearch.php",
+      "notes": "Helpful for archived-web retrieval rather than present-day knowledge search."
+    },
+    {
+      "site_name": "LOC geospatial search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://geo.loc.gov/search?tags={query}",
+      "notes": "Interesting but more specialized than the general loc.gov API search."
+    },
+    {
+      "site_name": "Data.gov catalog API",
+      "status": "researched_not_final_due_to_overlap",
+      "category": "official_government_data",
+      "url_template": "https://catalog.data.gov/api/3/action/package_search?q={query}",
+      "notes": "Machine-readable sibling to the HTML Data.gov dataset search."
+    },
+    {
+      "site_name": "Google Scholar",
+      "status": "researched_not_final_due_to_automation_friction",
+      "category": "scientific_scholarly_literature",
+      "url_template": "https://scholar.google.com/scholar?q={query}",
+      "notes": "Valuable in practice, but direct automated validation was inconsistent in this environment."
+    },
+    {
+      "site_name": "PubMed advanced",
+      "status": "researched_not_final_due_to_overlap",
+      "category": "scientific_medical_literature",
+      "url_template": "https://pubmed.ncbi.nlm.nih.gov/advanced/",
+      "notes": "Useful UI but not a simple one-URL query template like ?term=..."
+    },
+    {
+      "site_name": "Europe PMC annotations API",
+      "status": "researched_not_final_due_to_scope",
+      "category": "scientific_medical_literature",
+      "url_template": "https://europepmc.org/annotations_api/annotationsByArticleIds?articleIds={id_list}",
+      "notes": "Excellent, but not a generic free-text search endpoint."
+    },
+    {
+      "site_name": "Semantic Scholar Academic Graph API",
+      "status": "researched_not_final_due_to_scope",
+      "category": "scientific_scholarly_literature",
+      "url_template": "https://api.semanticscholar.org/graph/v1/paper/search?query={query}",
+      "notes": "Strong candidate, but the user asked for page-like or standard URL-callable tools; OpenAlex/Crossref/arXiv covered this better for the current pass."
+    },
+    {
+      "site_name": "Semantic Scholar UI",
+      "status": "researched_not_final_due_to_partial_verification",
+      "category": "scientific_scholarly_literature",
+      "url_template": "https://www.semanticscholar.org/search?q={query}",
+      "notes": "Likely useful, but I kept more strongly documented alternatives."
+    },
+    {
+      "site_name": "Merriam-Webster word finder",
+      "status": "researched_not_final_due_to_scope",
+      "category": "language_vocabulary",
+      "url_template": "https://www.merriam-webster.com/wordfinder/classic/contains/all/-1/{query}/1",
+      "notes": "Interesting for letter-pattern tasks, but more niche than the main dictionary/thesaurus."
+    },
+    {
+      "site_name": "Cambridge general dictionary landing",
+      "status": "researched_not_final_due_to_overlap",
+      "category": "language_vocabulary",
+      "url_template": "https://dictionary.cambridge.org/us/dictionary/english/",
+      "notes": "Reference landing page; finalist uses the direct headword pattern."
+    },
+    {
+      "site_name": "LOC pictures related search",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_general_reference",
+      "url_template": "https://www.loc.gov/pictures/related/?q={query}&fi=names",
+      "notes": "Specialized faceted search endpoint."
+    },
+    {
+      "site_name": "FileInfo category pages",
+      "status": "researched_not_final_due_to_scope",
+      "category": "file_type_lookup",
+      "url_template": "https://fileinfo.com/filetypes/{category}",
+      "notes": "Useful for browsing, but extension lookup is the primary need."
+    },
+    {
+      "site_name": "MIME-Type.com",
+      "status": "researched_not_final_due_to_less_authoritative",
+      "category": "file_type_lookup",
+      "url_template": "https://mime-type.com/{mime_or_extension}/",
+      "notes": "Can help with MIME-specific lookups, but FileInfo and LoC were stronger fits."
+    },
+    {
+      "site_name": "ScienceBase docs query builder",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://www.usgs.gov/sciencebase-instructions-and-documentation/building-search-queries",
+      "notes": "Documentation page rather than final search destination."
+    },
+    {
+      "site_name": "USGS water services URL generation tool",
+      "status": "researched_not_final_due_to_scope",
+      "category": "official_government_data",
+      "url_template": "https://waterservices.usgs.gov/test-tools/?service=site",
+      "notes": "Specialized URL builder for USGS water service endpoints."
+    },
+    {
+      "site_name": "NIST public data catalog",
+      "status": "researched_not_final_due_to_unverified_template",
+      "category": "official_government_data",
+      "url_template": "https://data.nist.gov/od/id/search?query={query}",
+      "notes": "Likely useful, but I kept Data.gov and LoC as the more clearly documented finalists."
+    },
+    {
+      "site_name": "MedlinePlus site search",
+      "status": "researched_not_final_due_to_less_machine_friendly",
+      "category": "scientific_medical_literature",
+      "url_template": "https://medlineplus.gov/?searchterm={query}",
+      "notes": "Likely usable, but the web service is cleaner for machine consumption."
+    }
+  ]
+}

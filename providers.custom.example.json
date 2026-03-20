@@ -1,0 +1,47 @@
+[
+  {
+    "id": "my-site-search",
+    "title": "My Site Search",
+    "enabled": true,
+    "openInBackground": false,
+    "urlTemplate": "https://example.com/search?query={text}",
+    "filters": {
+      "trim": true,
+      "collapseWhitespace": true,
+      "lowercase": false,
+      "uppercase": false,
+      "encoding": "url",
+      "regexReplacements": []
+    }
+  },
+  {
+    "id": "slug-style-docs",
+    "title": "Slug-style Docs",
+    "enabled": true,
+    "openInBackground": false,
+    "urlTemplate": "https://docs.example.com/article/{text}",
+    "filters": {
+      "trim": true,
+      "collapseWhitespace": true,
+      "lowercase": true,
+      "encoding": "url",
+      "regexReplacements": [
+        { "pattern": "\\s+", "flags": "g", "replacement": "-" },
+        { "pattern": "[^a-z0-9_-]", "flags": "g", "replacement": "" }
+      ]
+    }
+  },
+  {
+    "id": "raw-fragment-example",
+    "title": "Raw Fragment Example",
+    "enabled": false,
+    "openInBackground": false,
+    "urlTemplate": "customscheme://lookup/{raw}",
+    "filters": {
+      "trim": true,
+      "collapseWhitespace": true,
+      "encoding": "none",
+      "regexReplacements": []
+    }
+  }
+]
