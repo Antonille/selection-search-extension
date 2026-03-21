@@ -1,0 +1,93 @@
+{
+  "schema_version": "2.0",
+  "schema_name": "selection-search-resource-spec",
+  "generated_at": "YYYY-MM-DD",
+  "purpose": "Example template for Selection Search Launcher",
+  "global_rules": {
+    "selection_input": {
+      "default_source": "selected_text",
+      "normalize_unicode": "NFKC_optional",
+      "trim_whitespace_default": true,
+      "collapse_internal_whitespace_default": true
+    },
+    "menu_defaults": {
+      "root_title": "Search selected text with\u2026",
+      "group_related_entries": true
+    },
+    "result_handling_defaults": {
+      "html_strategy": "direct",
+      "structured_strategy": "launchpad"
+    }
+  },
+  "resources": [
+    {
+      "id": "example_search",
+      "status": "active",
+      "resource": {
+        "site_name": "Example Search",
+        "resource_label": "Example search",
+        "description": "A minimal example entry.",
+        "homepage": "https://example.com/",
+        "category": "general_reference",
+        "confidence": "medium",
+        "tested_status": "example"
+      },
+      "menu": {
+        "category_label": "General Reference",
+        "group_label": "Example",
+        "title": "Example search",
+        "category_order": 100,
+        "group_order": 100,
+        "order": 100
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://example.com/search?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "finite element analysis",
+            "expected_url": "https://example.com/search?q=finite+element+analysis"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    }
+  ]
+}

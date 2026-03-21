@@ -1,0 +1,43 @@
+# Node / JavaScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Build / release artifacts
+dist/
+build/
+coverage/
+release/
+*.zip
+*.crx
+*.map
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Secrets / local config
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+credentials.json
+secrets.json
+*.key
+
+# Misc
+*.log

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selection Search Launcher - Result Launchpad</title>
+    <link rel="stylesheet" href="options.css" />
+    <style>
+      body { max-width: 920px; margin: 0 auto; padding: 2rem; }
+      .card { background: #fff; border: 1px solid #d7dbe3; border-radius: 10px; padding: 1rem 1.25rem; margin-top: 1rem; }
+      .buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+      .buttons button, .buttons a { display: inline-block; background: #0b57d0; color: #fff; border: none; padding: 0.65rem 1rem; border-radius: 8px; text-decoration: none; cursor: pointer; }
+      .buttons button.secondary, .buttons a.secondary { background: #eef3fb; color: #0b57d0; }
+      code, pre { overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Selection Search Launcher</h1>
+      <p>This resource is configured to open through a launch page first because it may return structured data or a non-HTML response.</p>
+
+      <section class="card">
+        <h2 id="resourceTitle">Loading…</h2>
+        <p><strong>Expected format:</strong> <span id="resultFormat">—</span></p>
+        <p id="displayHint"></p>
+        <div id="notes"></div>
+      </section>
+
+      <section class="card">
+        <h2>Target URL</h2>
+        <pre id="targetUrl"></pre>
+        <div class="buttons">
+          <button id="openHereBtn">Open target in this tab</button>
+          <button id="openNewTabBtn" class="secondary">Open target in a new tab</button>
+          <button id="copyUrlBtn" class="secondary">Copy URL</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="launch.js"></script>
+  </body>
+</html>

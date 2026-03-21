@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selection Search Launcher - Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Selection Search Launcher</h1>
+      <p>
+        The packaged <code>providers.default.json</code> file is the live default. Save or import only when you want a local override.
+      </p>
+
+      <section class="toolbar">
+        <button id="saveBtn">Save override</button>
+        <button id="resetBtn">Clear override / use packaged defaults</button>
+        <button id="exportBtn">Export JSON</button>
+        <label class="importLabel">
+          Import JSON override
+          <input id="importFile" type="file" accept="application/json,.json" />
+        </label>
+      </section>
+
+      <div id="status" aria-live="polite"></div>
+
+      <textarea id="configBox" spellcheck="false"></textarea>
+
+      <section class="notes">
+        <h2>Accepted config formats</h2>
+        <ul>
+          <li>A simple top-level array of providers using <code>urlTemplate</code> and optional <code>filters</code>.</li>
+          <li>A richer object with <code>finalists</code>.</li>
+          <li>The new spec object with a top-level <code>resources</code> array and explicit placeholder pipelines.</li>
+        </ul>
+
+        <h2>Why the override model changed</h2>
+        <p>
+          In older revisions, the packaged JSON was copied into extension storage once and then silently diverged from the file on disk.
+          In this revision, editing <code>providers.default.json</code> in the unpacked folder and clicking <strong>Reload</strong> in
+          <code>chrome://extensions</code> immediately changes the live default behavior.
+        </p>
+
+        <h2>Menu grouping</h2>
+        <p>
+          The extension groups entries by category first, then by site family. The new spec can also explicitly set
+          <code>menu.category_label</code> and <code>menu.group_label</code>.
+        </p>
+      </section>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>

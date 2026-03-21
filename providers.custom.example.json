@@ -1,0 +1,78 @@
+{
+  "schema_version": "2.0",
+  "schema_name": "selection-search-resource-spec",
+  "generated_at": "2026-03-21",
+  "purpose": "Example custom override for Selection Search Launcher",
+  "resources": [
+    {
+      "id": "google_search",
+      "status": "active",
+      "resource": {
+        "site_name": "Google",
+        "resource_label": "Google search",
+        "description": "General web search",
+        "homepage": "https://www.google.com/",
+        "category": "general_knowledge",
+        "confidence": "high",
+        "tested_status": "example"
+      },
+      "menu": {
+        "category_label": "General Knowledge",
+        "group_label": "Google",
+        "title": "Google search",
+        "category_order": 100,
+        "group_order": 100,
+        "order": 100
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "subject"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.google.com/search?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "finite element analysis",
+            "expected_url": "https://www.google.com/search?q=finite+element+analysis"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    }
+  ]
+}

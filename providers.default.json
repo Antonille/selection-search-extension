@@ -1,0 +1,1813 @@
+{
+  "schema_version": "2.0",
+  "schema_name": "selection-search-resource-spec",
+  "generated_at": "2026-03-20",
+  "purpose": "Reusable URL-template knowledge base for an LLM or other string-to-URL search caller. Focused on language/vocabulary tools, scholarly/scientific search, and trusted official/general reference resources.",
+  "global_rules": {
+    "selection_input": {
+      "default_source": "selected_text",
+      "normalize_unicode": "NFKC_optional",
+      "trim_whitespace_default": true,
+      "collapse_internal_whitespace_default": true
+    },
+    "menu_defaults": {
+      "root_title": "Search selected text with…",
+      "group_related_entries": true
+    },
+    "result_handling_defaults": {
+      "html_strategy": "direct",
+      "structured_strategy": "launchpad"
+    },
+    "legacy_source_notes": {
+      "encoding_baseline": {
+        "character_set": "UTF-8",
+        "normalize_unicode": "NFKC optional; safe for most user text before URL building.",
+        "trim_whitespace": true,
+        "collapse_internal_whitespace_default": true,
+        "default_query_param_encoding": "application/x-www-form-urlencoded style via quote_plus (space -> '+').",
+        "default_path_segment_encoding": "Percent-encode one path segment via quote(s, safe='') (space -> '%20', '/' -> '%2F').",
+        "do_not_lowercase_by_default": true,
+        "do_not_strip_punctuation_by_default": true
+      },
+      "operator_preservation_rule": {
+        "applies_to": [
+          "PubMed",
+          "PubMed Clinical Queries",
+          "Europe PMC",
+          "arXiv search/API",
+          "OpenAlex",
+          "Crossref",
+          "JSTOR",
+          "GitHub search",
+          "openFDA",
+          "Wikipedia Special:Search"
+        ],
+        "instruction": "When the endpoint supports field tags, quotes, Boolean operators, wildcards, ranges, or other query syntax, preserve those operators in the logical query string and percent-encode only when inserting into the final URL. Do not aggressively scrub punctuation inside the logical query."
+      },
+      "file_extension_rule": {
+        "applies_to": [
+          "FileInfo",
+          "similar extension-focused sites"
+        ],
+        "instruction": "For extension lookups, strip a leading dot if present, lowercase the extension, and encode as a path segment. Example: '.PDF' -> 'pdf'."
+      },
+      "phrase_handling_rule": {
+        "instruction": "For ordinary phrase search on query-parameter endpoints, trim, collapse repeated whitespace to single spaces, then quote_plus the phrase. If the site supports exact-phrase quoting and exact phrase is intended, wrap the logical phrase in double quotes before URL encoding."
+      },
+      "word_lookup_rule": {
+        "instruction": "For exact single-word dictionary/etymology lookups that use path segments, pass the original token as one path segment after trimming. Encode apostrophes, spaces, slashes, and question marks."
+      }
+    }
+  },
+  "resources": [
+    {
+      "id": "mw_dictionary",
+      "status": "active",
+      "resource": {
+        "site_name": "Merriam-Webster Dictionary",
+        "resource_label": "English dictionary / exact headword lookup",
+        "description": "Best for exact dictionary-style lookup.",
+        "homepage": "https://www.merriam-webster.com/",
+        "category": "language_vocabulary",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "Language Vocabulary",
+        "group_label": "Merriam-Webster",
+        "title": "English dictionary / exact headword lookup",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "short phrase"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.merriam-webster.com/dictionary/{path_term}",
+        "method": "GET",
+        "placeholders": {
+          "path_term": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "path_term"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "algorithm",
+            "expected_url": "https://www.merriam-webster.com/dictionary/algorithm"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "mw_thesaurus",
+      "status": "active",
+      "resource": {
+        "site_name": "Merriam-Webster Thesaurus",
+        "resource_label": "Synonyms / antonyms / related words",
+        "description": "Use when synonym/antonym intent is explicit.",
+        "homepage": "https://www.merriam-webster.com/",
+        "category": "language_vocabulary",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "Language Vocabulary",
+        "group_label": "Merriam-Webster",
+        "title": "Synonyms / antonyms / related words",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "short phrase"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.merriam-webster.com/thesaurus/{path_term}",
+        "method": "GET",
+        "placeholders": {
+          "path_term": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "path_term"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "robust",
+            "expected_url": "https://www.merriam-webster.com/thesaurus/robust"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "cambridge_dictionary",
+      "status": "active",
+      "resource": {
+        "site_name": "Cambridge Dictionary",
+        "resource_label": "Learner-friendly English dictionary",
+        "description": "Good secondary dictionary, especially for learner-oriented definitions and pronunciation.",
+        "homepage": "https://dictionary.cambridge.org/us/dictionary/english/",
+        "category": "language_vocabulary",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "Language Vocabulary",
+        "group_label": "Cambridge Dictionary",
+        "title": "Learner-friendly English dictionary",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "short phrase"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://dictionary.cambridge.org/us/dictionary/english/{path_term}",
+        "method": "GET",
+        "placeholders": {
+          "path_term": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "path_term"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "tensor",
+            "expected_url": "https://dictionary.cambridge.org/us/dictionary/english/tensor"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "etymonline_word",
+      "status": "active",
+      "resource": {
+        "site_name": "Online Etymology Dictionary",
+        "resource_label": "Etymology / word origin / word history",
+        "description": "Best for etymology among the finalists.",
+        "homepage": "https://www.etymonline.com/",
+        "category": "language_vocabulary",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "Language Vocabulary",
+        "group_label": "Online Etymology Dictionary",
+        "title": "Etymology / word origin / word history",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.etymonline.com/word/{path_term}",
+        "method": "GET",
+        "placeholders": {
+          "path_term": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "path_term"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "algorithm",
+            "expected_url": "https://www.etymonline.com/word/algorithm"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "wiktionary_entry",
+      "status": "active",
+      "resource": {
+        "site_name": "Wiktionary",
+        "resource_label": "Exact term lookup with multilingual and morphological context",
+        "description": "Useful when morphology, alternate forms, or multilingual sense inventory matters.",
+        "homepage": "https://en.wiktionary.org/wiki/Help:Searching",
+        "category": "language_vocabulary",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "Language Vocabulary",
+        "group_label": "Wiktionary",
+        "title": "Exact term lookup with multilingual and morphological context",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "inflected_form"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://en.wiktionary.org/wiki/{path_term}",
+        "method": "GET",
+        "placeholders": {
+          "path_term": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "path_term"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "tensor",
+            "expected_url": "https://en.wiktionary.org/wiki/tensor"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "wikipedia_special_search",
+      "status": "active",
+      "resource": {
+        "site_name": "Wikipedia Special:Search",
+        "resource_label": "General knowledge search with title redirect on exact match",
+        "description": "Wikipedia may redirect to a title page when it finds an exact title match; otherwise it yields search results.",
+        "homepage": "https://en.wikipedia.org/w/index.php?search=finite+element+analysis&title=Special%3ASearch&ns0=1",
+        "category": "general_knowledge",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "General Knowledge",
+        "group_label": "Wikipedia Special:Search",
+        "title": "General knowledge search with title redirect on exact match",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "title",
+          "subject"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://en.wikipedia.org/w/index.php?search={query}&title=Special%3ASearch&ns0=1",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "finite element analysis",
+            "expected_url": "https://en.wikipedia.org/w/index.php?search=finite+element+analysis&title=Special%3ASearch&ns0=1"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "onelook_general",
+      "status": "active",
+      "resource": {
+        "site_name": "OneLook",
+        "resource_label": "Dictionary aggregator / reverse dictionary / pattern search / misspelling-adjacent discovery",
+        "description": "Very useful for unknown/misspelled/contextual word hunting. May present JavaScript/CAPTCHA friction to automated clients. Same endpoint also supports reverse-dictionary and pattern syntax.",
+        "homepage": "https://www.onelook.com/?loc=olthes1&w=standard+algorithm",
+        "category": "language_vocabulary",
+        "confidence": "medium_high",
+        "tested_status": "tested_with_caveat"
+      },
+      "menu": {
+        "category_label": "Language Vocabulary",
+        "group_label": "OneLook",
+        "title": "Dictionary aggregator / reverse dictionary / pattern search / misspelling-adjacent discovery",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "reverse_dictionary",
+          "pattern",
+          "crossword_like",
+          "fuzzy_vocabulary_search"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.onelook.com/?w={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "search algorithm",
+            "expected_url": "https://www.onelook.com/?w=search+algorithm"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "pubmed_search",
+      "status": "active",
+      "resource": {
+        "site_name": "PubMed",
+        "resource_label": "Biomedical literature search",
+        "description": "PubMed citation sensor can often recover from imperfect citation strings and some incorrect terms.",
+        "homepage": "https://pubmed.ncbi.nlm.nih.gov/",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "PubMed",
+        "title": "Biomedical literature search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "author",
+          "title",
+          "subject",
+          "citation",
+          "medical_topic"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://pubmed.ncbi.nlm.nih.gov/?term={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "diabetes hypertension",
+            "expected_url": "https://pubmed.ncbi.nlm.nih.gov/?term=diabetes+hypertension"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "pubmed_clinical_queries",
+      "status": "active",
+      "resource": {
+        "site_name": "PubMed Clinical Queries",
+        "resource_label": "Clinical evidence-focused PubMed search",
+        "description": "Use when the intent is clinical evidence rather than general biomed indexing.",
+        "homepage": "https://pubmed.ncbi.nlm.nih.gov/help/",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "PubMed",
+        "title": "Clinical evidence-focused PubMed search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "phrase",
+          "medical_topic",
+          "clinical_question"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://pubmed.ncbi.nlm.nih.gov/clinical/?term={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "hypertension diabetes",
+            "expected_url": "https://pubmed.ncbi.nlm.nih.gov/clinical/?term=hypertension+diabetes"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "medlineplus_webservice",
+      "status": "active",
+      "resource": {
+        "site_name": "MedlinePlus Web Service",
+        "resource_label": "Consumer health topic retrieval from NIH/NLM",
+        "description": "Machine-readable XML; useful when a safer, patient-oriented medical topic source is preferable to journal literature.",
+        "homepage": "https://medlineplus.gov/about/using/searchtips/",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "MedlinePlus Web Service",
+        "title": "Consumer health topic retrieval from NIH/NLM",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "medical_topic",
+          "word",
+          "phrase"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "diabetes",
+            "expected_url": "https://wsearch.nlm.nih.gov/ws/query?db=healthTopics&term=diabetes"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "xml",
+        "content_type_hint": "application/xml",
+        "browser_strategy": "launchpad",
+        "display_hint": "Open launch page first so the user gets format-specific guidance",
+        "notes_for_user": [
+          "The endpoint is expected to return XML rather than an HTML page.",
+          "The extension launch page can show hints and then open the raw endpoint URL."
+        ],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "europe_pmc_search",
+      "status": "active",
+      "resource": {
+        "site_name": "Europe PMC",
+        "resource_label": "Life sciences literature search",
+        "description": "Strong complement to PubMed; good global life-sciences coverage.",
+        "homepage": "https://europepmc.org/advancesearch",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "Europe PMC",
+        "title": "Life sciences literature search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "author",
+          "title",
+          "subject",
+          "grant_related"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://europepmc.org/search?query={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "CRISPR Cas9",
+            "expected_url": "https://europepmc.org/search?query=CRISPR+Cas9"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "arxiv_search",
+      "status": "active",
+      "resource": {
+        "site_name": "arXiv search",
+        "resource_label": "Open preprint search across many scientific and technical fields",
+        "description": "Best open starting point for recent ML/AI/algorithms work.",
+        "homepage": "https://info.arxiv.org/help/find.html",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "tested"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "arXiv search",
+        "title": "Open preprint search across many scientific and technical fields",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "author",
+          "title",
+          "subject"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://arxiv.org/search/?query={query}&searchtype=all",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "large language model",
+            "expected_url": "https://arxiv.org/search/?query=large+language+model&searchtype=all"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "openalex_works_search",
+      "status": "active",
+      "resource": {
+        "site_name": "OpenAlex Works API",
+        "resource_label": "Scholarly works search API",
+        "description": "Machine-readable and broad; excellent for LLM ingestion.",
+        "homepage": "https://developers.openalex.org/api-reference/introduction",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "OpenAlex Works API",
+        "title": "Scholarly works search API",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "author_related",
+          "subject"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://api.openalex.org/works?search={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "graph neural network",
+            "expected_url": "https://api.openalex.org/works?search=graph+neural+network"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "json",
+        "content_type_hint": "application/json",
+        "browser_strategy": "launchpad",
+        "display_hint": "Open launch page first so the user gets format-specific guidance",
+        "notes_for_user": [
+          "The endpoint is expected to return JSON rather than an HTML page.",
+          "The extension launch page can show hints and then open the raw endpoint URL."
+        ],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "crossref_works_query_bibliographic",
+      "status": "active",
+      "resource": {
+        "site_name": "Crossref Works API",
+        "resource_label": "Crossref bibliographic metadata search",
+        "description": "Good for DOI-oriented and bibliographic retrieval.",
+        "homepage": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/tips-for-using-the-crossref-rest-api/",
+        "category": "scientific_medical_literature",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Medical Literature",
+        "group_label": "Crossref Works API",
+        "title": "Crossref bibliographic metadata search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "phrase",
+          "title",
+          "author",
+          "bibliographic_citation",
+          "subject"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://api.crossref.org/works?query.bibliographic={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "quantum computing",
+            "expected_url": "https://api.crossref.org/works?query.bibliographic=quantum+computing"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "json",
+        "content_type_hint": "application/json",
+        "browser_strategy": "launchpad",
+        "display_hint": "Open launch page first so the user gets format-specific guidance",
+        "notes_for_user": [
+          "The endpoint is expected to return JSON rather than an HTML page.",
+          "The extension launch page can show hints and then open the raw endpoint URL."
+        ],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "nasa_ntrs_search",
+      "status": "active",
+      "resource": {
+        "site_name": "NASA Technical Reports Server (NTRS)",
+        "resource_label": "NASA aerospace and engineering literature search",
+        "description": "Very strong for aerospace engineering, NASA technical reports, and some space systems software/analysis topics.",
+        "homepage": "https://ntrs.nasa.gov/search",
+        "category": "scientific_engineering_literature",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "Scientific Engineering Literature",
+        "group_label": "NASA Technical Reports Server (NTRS)",
+        "title": "NASA aerospace and engineering literature search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "title",
+          "author",
+          "subject",
+          "aerospace_engineering"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://ntrs.nasa.gov/search?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "finite element analysis",
+            "expected_url": "https://ntrs.nasa.gov/search?q=finite+element+analysis"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "jstor_basic_search",
+      "status": "active",
+      "resource": {
+        "site_name": "JSTOR basic search",
+        "resource_label": "Humanities/social sciences and some interdisciplinary journal/book search",
+        "description": "Useful but not as open-machine-friendly as arXiv/OpenAlex/Crossref.",
+        "homepage": "https://www.jstor.org/stable/community.24796996?Search=yes&ab_segments=0%2Fbasic_search_gsv2%2Fcontrol&refreqid=fastly-default%3A4a3fdaa0e3a0e4b5b8975ac86367c7a2&resultItemClick=true&searchText=bournville&searchUri=%2Faction%2FdoBasicSearch%3FQuery%3Dbournville&searchkey=1645626062671&seq=1",
+        "category": "scientific_scholarly_literature",
+        "confidence": "medium_high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Scholarly Literature",
+        "group_label": "JSTOR basic search",
+        "title": "Humanities/social sciences and some interdisciplinary journal/book search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "title",
+          "author",
+          "subject"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.jstor.org/action/doBasicSearch?Query={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ],
+            "preserve_operators": true
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "machine translation",
+            "expected_url": "https://www.jstor.org/action/doBasicSearch?Query=machine+translation"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "doaj_articles_search",
+      "status": "active",
+      "resource": {
+        "site_name": "DOAJ article search",
+        "resource_label": "Open-access journal/article discovery",
+        "description": "DOAJ quick search is prominently documented on the home page. Path-style article search URL is widely used, but less explicitly documented than some API endpoints.",
+        "homepage": "https://doaj.org/search/articles",
+        "category": "scientific_scholarly_literature",
+        "confidence": "medium_high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Scientific Scholarly Literature",
+        "group_label": "DOAJ article search",
+        "title": "Open-access journal/article discovery",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "title",
+          "subject",
+          "publisher"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://doaj.org/search/articles/{path_term}",
+        "method": "GET",
+        "placeholders": {
+          "path_term": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "path_term"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "machine learning",
+            "expected_url": "https://doaj.org/search/articles/machine%20learning"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "python_docs_search",
+      "status": "active",
+      "resource": {
+        "site_name": "Python official docs search",
+        "resource_label": "Python documentation search",
+        "description": "OpenSearch template for Python docs explicitly publishes this URL pattern.",
+        "homepage": "https://docs.python.org/3.9/search.html?area=default&check_keywords=yes&q=cgi",
+        "category": "programming_docs",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "Programming Docs",
+        "group_label": "Python official docs search",
+        "title": "Python documentation search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "function_name",
+          "module_name",
+          "concept"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://docs.python.org/3.14/search.html?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "urllib.parse",
+            "expected_url": "https://docs.python.org/3.14/search.html?q=urllib.parse"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "numpy_docs_search",
+      "status": "active",
+      "resource": {
+        "site_name": "NumPy docs search",
+        "resource_label": "NumPy documentation search",
+        "description": "Search results are rendered via Sphinx search page.",
+        "homepage": "https://numpy.org/doc/stable/search.html?q=Indexing",
+        "category": "programming_docs",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "Programming Docs",
+        "group_label": "NumPy docs search",
+        "title": "NumPy documentation search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "function_name",
+          "module_name",
+          "concept"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://numpy.org/doc/stable/search.html?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "einsum",
+            "expected_url": "https://numpy.org/doc/stable/search.html?q=einsum"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "scipy_docs_search",
+      "status": "active",
+      "resource": {
+        "site_name": "SciPy docs search",
+        "resource_label": "SciPy documentation search",
+        "description": "Search results are rendered via Sphinx search page.",
+        "homepage": "https://docs.scipy.org/doc/scipy/search.html?q=scipy.stats.qmc.Halton",
+        "category": "programming_docs",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "Programming Docs",
+        "group_label": "SciPy docs search",
+        "title": "SciPy documentation search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "function_name",
+          "module_name",
+          "concept"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://docs.scipy.org/doc/scipy/search.html?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "sparse.linalg",
+            "expected_url": "https://docs.scipy.org/doc/scipy/search.html?q=sparse.linalg"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "pytorch_docs_search",
+      "status": "active",
+      "resource": {
+        "site_name": "PyTorch docs search",
+        "resource_label": "PyTorch documentation search",
+        "description": "PyTorch search page works, although it warns that JavaScript improves the experience.",
+        "homepage": "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q=dataloader",
+        "category": "programming_docs",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "Programming Docs",
+        "group_label": "PyTorch docs search",
+        "title": "PyTorch documentation search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "API_name",
+          "class_name",
+          "concept"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "DistributedDataParallel",
+            "expected_url": "https://pytorch.org/docs/stable/search.html?area=default&check_keywords=yes&q=DistributedDataParallel"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "mdn_search",
+      "status": "active",
+      "resource": {
+        "site_name": "MDN Web Docs search",
+        "resource_label": "Web platform / browser API documentation search",
+        "description": "MDN itself uses /en-US/search?q=... in examples and site URLs.",
+        "homepage": "https://developer.mozilla.org/en-US/docs/Web/API/Location",
+        "category": "programming_docs",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Programming Docs",
+        "group_label": "MDN Web Docs search",
+        "title": "Web platform / browser API documentation search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "API_name",
+          "concept"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://developer.mozilla.org/en-US/search?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "URLSearchParams",
+            "expected_url": "https://developer.mozilla.org/en-US/search?q=URLSearchParams"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "fileinfo_extension",
+      "status": "active",
+      "resource": {
+        "site_name": "FileInfo",
+        "resource_label": "File extension lookup",
+        "description": "One of the most practical direct filetype resources.",
+        "homepage": "https://fileinfo.com/",
+        "category": "file_type_lookup",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "File Type Lookup",
+        "group_label": "FileInfo",
+        "title": "File extension lookup",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "file_extension"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://fileinfo.com/extension/{normalized_extension}",
+        "method": "GET",
+        "placeholders": {
+          "normalized_extension": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "strip_leading_dots",
+              "lowercase",
+              "encode_path_segment"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "normalized_extension"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "pdf",
+            "expected_url": "https://fileinfo.com/extension/pdf"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "data_gov_dataset_search",
+      "status": "active",
+      "resource": {
+        "site_name": "Data.gov dataset search",
+        "resource_label": "US government open dataset search",
+        "description": "Good general U.S. government dataset discovery entry point.",
+        "homepage": "https://resources.data.gov/catalog-api/",
+        "category": "official_government_data",
+        "confidence": "high",
+        "tested_status": "tested_via_search_result"
+      },
+      "menu": {
+        "category_label": "Official Government Data",
+        "group_label": "Data.gov dataset search",
+        "title": "US government open dataset search",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "subject",
+          "dataset_topic"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://catalog.data.gov/dataset?q={query}",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "climate change",
+            "expected_url": "https://catalog.data.gov/dataset?q=climate+change"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "html",
+        "content_type_hint": "text/html",
+        "browser_strategy": "direct",
+        "display_hint": "Open directly in a browser tab",
+        "notes_for_user": [],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    },
+    {
+      "id": "loc_general_search_api",
+      "status": "active",
+      "resource": {
+        "site_name": "Library of Congress search API",
+        "resource_label": "General Library of Congress search endpoint",
+        "description": "Useful official reference endpoint; JSON is convenient for LLM parsing.",
+        "homepage": "https://www.loc.gov/apis/json-and-yaml/requests/parameters/",
+        "category": "official_general_reference",
+        "confidence": "high",
+        "tested_status": "documented_high_confidence"
+      },
+      "menu": {
+        "category_label": "Official General Reference",
+        "group_label": "Library of Congress search API",
+        "title": "General Library of Congress search endpoint",
+        "order": 1000
+      },
+      "input_contract": {
+        "selection_policy": "selected_text",
+        "supported_query_modes": [
+          "word",
+          "phrase",
+          "title",
+          "subject",
+          "person",
+          "historical_topic"
+        ],
+        "allow_empty": false
+      },
+      "url": {
+        "template": "https://www.loc.gov/search/?q={query}&fo=json",
+        "method": "GET",
+        "placeholders": {
+          "query": {
+            "source": "selected_text",
+            "pipeline": [
+              "trim",
+              "collapse_whitespace",
+              "encode_query_param_plus"
+            ]
+          }
+        },
+        "validation": {
+          "required_placeholders": [
+            "query"
+          ],
+          "must_start_with": [
+            "https://"
+          ]
+        },
+        "examples": [
+          {
+            "selected_text": "baseball",
+            "expected_url": "https://www.loc.gov/search/?q=baseball&fo=json"
+          }
+        ]
+      },
+      "result_handling": {
+        "result_format": "json",
+        "content_type_hint": "application/json",
+        "browser_strategy": "launchpad",
+        "display_hint": "Open launch page first so the user gets format-specific guidance",
+        "notes_for_user": [
+          "The endpoint is expected to return JSON rather than an HTML page.",
+          "The extension launch page can show hints and then open the raw endpoint URL."
+        ],
+        "future_hooks": [
+          "viewer_hint",
+          "download_hint",
+          "post_processor_id"
+        ]
+      }
+    }
+  ]
+}
