@@ -56,7 +56,8 @@ function Invoke-External([string]$FilePath, [string[]]$ArgumentList) {
     $renderedArgs = ($ArgumentList | ForEach-Object { Convert-ToCommandLineArgument $_ }) -join ' '
     $details = (($result.StdErr + "`n" + $result.StdOut).Trim())
     if ($details) { Write-Host $details }
-    throw ("Command failed with exit code ${($result.ExitCode)}: {0} {1}" -f $FilePath, $renderedArgs)
+    $exitCode = $result.ExitCode
+    throw ("Command failed with exit code {0}: {1} {2}" -f $exitCode, $FilePath, $renderedArgs)
   }
   return $result
 }
@@ -224,7 +225,60 @@ function Ensure-OriginRemote([string]$RepoUrl) {
   }
 }
 
+function Sync-WithRemoteIfNeeded([string]$BranchName) {
+  $remoteRef = "origin/$BranchName"
+  $remoteHead = Invoke-ExternalCapture 'git' @('ls-remote', '--heads', 'origin', $BranchName)
+  if ($remoteHead.ExitCode -ne 0) {
+    throw 'Unable to inspect remote branch state on origin.'
+  }
+  if (-not $remoteHead.StdOut.Trim()) {
+    Write-Step "Remote branch '$remoteRef' does not exist yet."
+    return
+  }
+
+  Write-Step "Fetching $remoteRef ..."
+  Invoke-External 'git' @('fetch', 'origin', $BranchName) | Out-Null
+
+  $localSha = (Invoke-ExternalCapture 'git' @('rev-parse', 'HEAD')).StdOut.Trim()
+  $remoteSha = (Invoke-ExternalCapture 'git' @('rev-parse', $remoteRef)).StdOut.Trim()
+  if ($localSha -eq $remoteSha) {
+    Write-Step "Local branch already matches $remoteRef."
+    return
+  }
+
+  $mergeBase = Invoke-ExternalCapture 'git' @('merge-base', 'HEAD', $remoteRef)
+  if ($mergeBase.ExitCode -eq 0 -and $mergeBase.StdOut.Trim()) {
+    $baseSha = $mergeBase.StdOut.Trim()
+    if ($baseSha -eq $remoteSha) {
+      Write-Step "Local branch is ahead of $remoteRef."
+      return
+    }
+
+    Write-Step "Rebasing local commits onto $remoteRef ..."
+    $rebase = Invoke-ExternalCapture 'git' @('rebase', $remoteRef)
+    if ($rebase.StdOut) { Write-Host $rebase.StdOut.TrimEnd() }
+    if ($rebase.ExitCode -ne 0) {
+      $details = (($rebase.StdErr + "`n" + $rebase.StdOut).Trim())
+      if ($details) { Write-Host $details }
+      & git rebase --abort 1>$null 2>$null
+      throw "Automatic rebase onto $remoteRef failed. Resolve conflicts manually, then rerun the publish script."
+    }
+    return
+  }
+
+  Write-Step "Local and remote histories are unrelated. Attempting a one-time merge with --allow-unrelated-histories ..."
+  $merge = Invoke-ExternalCapture 'git' @('merge', '--allow-unrelated-histories', '--no-edit', $remoteRef)
+  if ($merge.StdOut) { Write-Host $merge.StdOut.TrimEnd() }
+  if ($merge.ExitCode -ne 0) {
+    $details = (($merge.StdErr + "`n" + $merge.StdOut).Trim())
+    if ($details) { Write-Host $details }
+    & git merge --abort 1>$null 2>$null
+    throw "Automatic merge with $remoteRef failed. Resolve conflicts manually, commit, then rerun the publish script."
+  }
+}
+
 function Ensure-Push([string]$BranchName) {
+  Sync-WithRemoteIfNeeded -BranchName $BranchName
   Write-Step "Pushing branch '$BranchName' to origin..."
   Invoke-External 'git' @('push', '-u', 'origin', $BranchName) | Out-Null
 }
