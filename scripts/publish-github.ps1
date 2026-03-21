@@ -1,12 +1,16 @@
 [CmdletBinding()]
 param(
-  [string]$Owner = "Antonille",
-  [string]$Repo = "selection-search-extension",
-  [string]$DefaultBranch = "main"
+  [string]$RepoOwner = 'Antonille',
+  [string]$RepoName = 'selection-search-extension',
+  [string]$DefaultBranch = 'main'
 )
 
-$ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+function Write-Step([string]$Message) {
+  Write-Host $Message
+}
 
 function Require-Command([string]$Name) {
   if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -14,54 +18,15 @@ function Require-Command([string]$Name) {
   }
 }
 
-function Test-Command([string]$Name) {
-  return [bool](Get-Command $Name -ErrorAction SilentlyContinue)
-}
-
-function Invoke-External {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$FilePath,
-    [Parameter()]
-    [string[]]$ArgumentList = @(),
-    [switch]$IgnoreExitCode
-  )
-
-  & $FilePath @ArgumentList
-  $exitCode = $LASTEXITCODE
-  if (-not $IgnoreExitCode -and $exitCode -ne 0) {
-    $renderedArgs = ($ArgumentList | ForEach-Object {
-      if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
-    }) -join ' '
-    throw ("Command failed with exit code ${exitCode}: {0} {1}" -f $FilePath, $renderedArgs)
+function Convert-ToCommandLineArgument([string]$Value) {
+  if ($null -eq $Value) { return '""' }
+  if ($Value -match '[\s"]') {
+    return '"' + ($Value -replace '"', '\"') + '"'
   }
-  return $exitCode
+  return $Value
 }
 
-function Convert-ToCommandLineArgument {
-  param(
-    [Parameter(Mandatory = $true)]
-    [AllowEmptyString()]
-    [string]$Value
-  )
-
-  if ($Value -notmatch '[\s"]') {
-    return $Value
-  }
-
-  $escaped = $Value -replace '(\\*)"', '$1$1\\"'
-  $escaped = $escaped -replace '(\\+)$', '$1$1'
-  return '"' + $escaped + '"'
-}
-
-function Invoke-ExternalCapture {
-  param(
-    [Parameter(Mandatory = $true)]
-    [string]$FilePath,
-    [Parameter()]
-    [string[]]$ArgumentList = @()
-  )
-
+function Invoke-ExternalCapture([string]$FilePath, [string[]]$ArgumentList) {
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = $FilePath
   $psi.Arguments = (($ArgumentList | ForEach-Object { Convert-ToCommandLineArgument $_ }) -join ' ')
@@ -69,354 +34,262 @@ function Invoke-ExternalCapture {
   $psi.RedirectStandardError = $true
   $psi.UseShellExecute = $false
   $psi.CreateNoWindow = $true
-  $psi.WorkingDirectory = (Get-Location).Path
 
-  $proc = New-Object System.Diagnostics.Process
-  $proc.StartInfo = $psi
-  [void]$proc.Start()
-  $stdout = $proc.StandardOutput.ReadToEnd()
-  $stderr = $proc.StandardError.ReadToEnd()
-  $proc.WaitForExit()
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $psi
+  [void]$process.Start()
+  $stdout = $process.StandardOutput.ReadToEnd()
+  $stderr = $process.StandardError.ReadToEnd()
+  $process.WaitForExit()
 
-  return [pscustomobject]@{
-    ExitCode = $proc.ExitCode
-    StdOut = $stdout
-    StdErr = $stderr
+  [pscustomobject]@{
+    ExitCode = $process.ExitCode
+    StdOut   = $stdout
+    StdErr   = $stderr
   }
 }
 
-function Validate-ExtensionBasic {
-  $requiredFiles = @(
-    'manifest.json',
-    'background.js',
-    'options.html',
-    'options.js',
-    'options.css',
-    'providers.default.json'
-  )
+function Invoke-External([string]$FilePath, [string[]]$ArgumentList) {
+  $result = Invoke-ExternalCapture $FilePath $ArgumentList
+  if ($result.StdOut) { Write-Host $result.StdOut.TrimEnd() }
+  if ($result.ExitCode -ne 0) {
+    $renderedArgs = ($ArgumentList | ForEach-Object { Convert-ToCommandLineArgument $_ }) -join ' '
+    $details = (($result.StdErr + "`n" + $result.StdOut).Trim())
+    if ($details) { Write-Host $details }
+    throw ("Command failed with exit code ${($result.ExitCode)}: {0} {1}" -f $FilePath, $renderedArgs)
+  }
+  return $result
+}
 
-  foreach ($file in $requiredFiles) {
-    if (-not (Test-Path $file)) {
-      throw "Missing required file: $file"
-    }
+function Get-ProjectRoot {
+  $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+  $candidate = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..'))
+  if (Test-Path (Join-Path $candidate 'manifest.json')) {
+    return $candidate
   }
+  $candidate2 = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
+  if (Test-Path (Join-Path $candidate2 'manifest.json')) {
+    return $candidate2
+  }
+  throw ('Could not locate project root containing manifest.json. Checked: {0} and {1}' -f $candidate, $candidate2)
+}
 
-  try {
-    $manifest = Get-Content 'manifest.json' -Raw | ConvertFrom-Json
-  } catch {
-    throw 'manifest.json is not valid JSON.'
-  }
-
-  if ($manifest.manifest_version -ne 3) {
-    throw 'manifest.json must use Manifest V3.'
-  }
-
-  if (-not $manifest.permissions) {
-    throw 'manifest.json should contain a permissions array.'
-  }
-
-  if (-not $manifest.background -or $manifest.background.service_worker -ne 'background.js') {
-    throw 'manifest.json should point background.service_worker to background.js.'
-  }
-
-  if (-not $manifest.options_ui -or $manifest.options_ui.page -ne 'options.html') {
-    throw 'manifest.json should point options_ui.page to options.html.'
-  }
-
-  try {
-    $defaults = Get-Content 'providers.default.json' -Raw | ConvertFrom-Json
-  } catch {
-    throw 'providers.default.json is not valid JSON.'
-  }
-
-  $hasProviders = $false
-  if ($defaults -is [System.Collections.IEnumerable] -and -not ($defaults -is [pscustomobject]) -and -not ($defaults -is [string])) {
-    $hasProviders = $true
-  }
-  if ($defaults.PSObject.Properties.Name -contains 'providers' -and $defaults.providers) {
-    $hasProviders = $true
-  }
-  if ($defaults.PSObject.Properties.Name -contains 'finalists' -and $defaults.finalists) {
-    $hasProviders = $true
-  }
-
-  if (-not $hasProviders) {
-    throw 'providers.default.json must be an array, an object with providers, or an object with finalists.'
-  }
-
-  $backgroundJs = Get-Content 'background.js' -Raw
-  if ($backgroundJs -notmatch 'chrome\.contextMenus') {
-    throw 'background.js does not appear to use chrome.contextMenus.'
-  }
-  if ($backgroundJs -notmatch 'chrome\.storage') {
-    throw 'background.js does not appear to use chrome.storage.'
+function Ensure-GitIdentity {
+  $name = (git config user.name 2>$null)
+  $email = (git config user.email 2>$null)
+  if (-not $name -or -not $email) {
+    throw 'Git identity is not configured for this repository. Run: git config user.name "Antonille" and git config user.email "you@example.com"'
   }
 }
 
-function Get-SecretFindings {
-  $findings = New-Object System.Collections.Generic.List[object]
-  $ignoredDirNames = @('.git', 'node_modules', 'dist', 'build', 'coverage', 'release')
-  $sensitiveFilenames = @('.env', '.env.local', '.env.production', '.env.development', 'credentials.json', 'secrets.json', 'id_rsa', 'id_dsa', '.npmrc')
+function Test-GitRepoExists {
+  return (Test-Path (Join-Path (Get-Location) '.git'))
+}
+
+function Test-NodeAvailable {
+  return [bool](Get-Command node -ErrorAction SilentlyContinue)
+}
+
+function Invoke-SecretScan {
+  if (Test-NodeAvailable -and (Test-Path '.\scripts\scan-secrets.mjs')) {
+    Write-Step 'Running secret scan with Node helper...'
+    Invoke-External 'node' @('.\scripts\scan-secrets.mjs') | Out-Null
+    return
+  }
+
+  Write-Step 'Node not found. Running built-in PowerShell secret scan instead...'
   $patterns = @(
-    @{ Name = 'GitHub fine-grained token'; Pattern = 'github_pat_[A-Za-z0-9_]{20,}' },
-    @{ Name = 'GitHub token'; Pattern = '\bgh[pousr]_[A-Za-z0-9]{20,}\b' },
-    @{ Name = 'OpenAI-style key'; Pattern = '\bsk-[A-Za-z0-9]{20,}\b' },
-    @{ Name = 'AWS access key'; Pattern = '\bAKIA[0-9A-Z]{16}\b' },
-    @{ Name = 'Slack token'; Pattern = 'xox[baprs]-[A-Za-z0-9-]{10,}' },
-    @{ Name = 'Private key block'; Pattern = '-----BEGIN (?:RSA|DSA|EC|OPENSSH|PGP|PRIVATE) KEY-----' },
-    @{ Name = 'Bearer token'; Pattern = 'Bearer\s+[A-Za-z0-9._=-]{20,}' }
+    'ghp_[A-Za-z0-9]{36,}',
+    'github_pat_[A-Za-z0-9_]{20,}',
+    'AIza[0-9A-Za-z\-_]{35}',
+    'sk-[A-Za-z0-9]{20,}',
+    '-----BEGIN (RSA|DSA|EC|OPENSSH|PGP) PRIVATE KEY-----'
   )
-
-  function Add-Finding([string]$Source, [string]$Path, [int]$Line, [string]$Rule, [string]$Sample) {
-    $findings.Add([pscustomobject]@{
-      Source = $Source
-      Path   = $Path
-      Line   = $Line
-      Rule   = $Rule
-      Sample = $Sample
-    }) | Out-Null
-  }
-
-  function Scan-Text([string]$Source, [string]$Path, [string]$Text) {
-    foreach ($entry in $patterns) {
-      $matches = [regex]::Matches($Text, $entry.Pattern)
-      foreach ($m in $matches) {
-        $prefix = $Text.Substring(0, $m.Index)
-        $line = ([regex]::Matches($prefix, "`n")).Count + 1
-        $sample = $m.Value
-        if ($sample.Length -gt 120) {
-          $sample = $sample.Substring(0, 120)
-        }
-        Add-Finding $Source $Path $line $entry.Name $sample
-      }
-    }
-  }
-
-  function Test-BinaryFile([string]$FilePath) {
-    try {
-      $bytes = [System.IO.File]::ReadAllBytes($FilePath)
-      return $bytes -contains 0
-    } catch {
-      return $true
-    }
-  }
-
-  $root = (Get-Location).Path
-  $files = Get-ChildItem -Recurse -File | Where-Object {
+  $skipDirs = @('.git', 'node_modules', '.venv', 'venv')
+  $hits = @()
+  Get-ChildItem -Recurse -File | Where-Object {
     $full = $_.FullName
-    foreach ($dir in $ignoredDirNames) {
-      $segment = [IO.Path]::DirectorySeparatorChar + $dir + [IO.Path]::DirectorySeparatorChar
-      if ($full.Contains($segment)) { return $false }
+    foreach ($dir in $skipDirs) {
+      if ($full -like "*\\$dir\\*") { return $false }
     }
     return $true
-  }
-
-  foreach ($file in $files) {
-    $rel = Resolve-Path -LiteralPath $file.FullName -Relative
-    if ($rel.StartsWith('.\')) { $rel = $rel.Substring(2) }
-
-    if ($sensitiveFilenames -contains $file.Name) {
-      Add-Finding 'working-tree' $rel 1 'Sensitive filename' $file.Name
-    }
-
-    if (Test-BinaryFile $file.FullName) { continue }
-
+  } | ForEach-Object {
     try {
-      $text = Get-Content -LiteralPath $file.FullName -Raw -ErrorAction Stop
-      Scan-Text 'working-tree' $rel $text
-    } catch {
-      continue
-    }
-  }
-
-  $insideRepo = $false
-  if (Test-Path (Join-Path (Get-Location) '.git')) {
-    & git rev-parse --is-inside-work-tree 2>$null | Out-Null
-    if ($LASTEXITCODE -eq 0) { $insideRepo = $true }
-  }
-
-  if ($insideRepo) {
-    $revList = (& git rev-list --all) 2>$null
-    if ($revList) {
-      $objects = (& git rev-list --objects --all) 2>$null
-      foreach ($line in $objects) {
-        if (-not $line) { continue }
-        $parts = $line -split ' ', 2
-        if ($parts.Count -eq 2) {
-          $path = $parts[1]
-          $name = [IO.Path]::GetFileName($path)
-          if ($sensitiveFilenames -contains $name) {
-            Add-Finding 'git-history' $path 1 'Sensitive filename in history' $name
-          }
+      $content = Get-Content -Path $_.FullName -Raw -ErrorAction Stop
+      foreach ($pattern in $patterns) {
+        if ($content -match $pattern) {
+          $hits += $_.FullName
+          break
         }
       }
-
-      foreach ($entry in $patterns) {
-        $args = @('grep', '-nI', '-E', $entry.Pattern)
-        $args += $revList
-        & git @args 2>$null | ForEach-Object {
-          $output = $_.ToString()
-          if (-not $output) { return }
-          $firstColon = $output.IndexOf(':')
-          if ($firstColon -lt 0) { return }
-          $secondColon = $output.IndexOf(':', $firstColon + 1)
-          if ($secondColon -lt 0) { return }
-          $pathPart = $output.Substring(0, $firstColon)
-          $linePart = $output.Substring($firstColon + 1, $secondColon - $firstColon - 1)
-          $sample = $output.Substring($secondColon + 1)
-          if ($sample.Length -gt 120) { $sample = $sample.Substring(0, 120) }
-          $lineNum = 1
-          [void][int]::TryParse($linePart, [ref]$lineNum)
-          Add-Finding 'git-history' $pathPart $lineNum $entry.Name $sample
-        }
-      }
-    }
+    } catch {}
   }
-
-  return $findings
+  if ($hits.Count -gt 0) {
+    throw ('Potential secrets found in working tree: ' + ($hits -join ', '))
+  }
+  Write-Host 'No likely secrets found in working tree.'
 }
 
-Require-Command git
-Require-Command gh
-
-Write-Host "Checking GitHub authentication..."
-$null = Invoke-External gh @('auth', 'status')
-
-if (Test-Command node) {
-  Write-Host "Running secret scan with Node helper..."
-  Invoke-External node @('.\\scripts\\scan-secrets.mjs')
-} else {
-  Write-Host "Node not found. Running built-in PowerShell secret scan instead..."
-  $findings = Get-SecretFindings
-  if ($findings.Count -gt 0) {
-    Write-Host 'Potential secrets found:' -ForegroundColor Red
-    foreach ($f in $findings) {
-      Write-Host ("- [{0}] {1}:{2} :: {3} :: {4}" -f $f.Source, $f.Path, $f.Line, $f.Rule, $f.Sample)
-    }
-    throw 'Secret scan failed. Fix findings before publishing.'
+function Invoke-ExtensionValidation {
+  if (Test-NodeAvailable -and (Test-Path '.\scripts\validate-extension.mjs')) {
+    Write-Step 'Running extension validation with Node helper...'
+    Invoke-External 'node' @('.\scripts\validate-extension.mjs') | Out-Null
+    return
   }
-  Write-Host 'No likely secrets found in working tree or reachable git history.'
-}
 
-if (Test-Command node) {
-  Write-Host "Running extension validation with Node helper..."
-  Invoke-External node @('.\\scripts\\validate-extension.mjs')
-} else {
-  Write-Host "Node not found. Running built-in PowerShell validation instead..."
-  Validate-ExtensionBasic
+  Write-Step 'Node not found. Running built-in PowerShell validation instead...'
+  if (-not (Test-Path '.\manifest.json')) { throw 'manifest.json not found.' }
+  if (-not (Test-Path '.\providers.default.json')) { throw 'providers.default.json not found.' }
+  $manifest = Get-Content '.\manifest.json' -Raw | ConvertFrom-Json
+  if (-not $manifest.manifest_version) { throw 'manifest.json is missing manifest_version.' }
+  $providers = Get-Content '.\providers.default.json' -Raw | ConvertFrom-Json
+  if (-not $providers.schema_version -or -not $providers.resources) { throw 'providers.default.json must be v2 schema with schema_version and resources.' }
   Write-Host 'Extension validation passed.'
 }
 
-if (-not (Test-Path .git)) {
-  Write-Host "Initializing git repository..."
-  $null = Invoke-External git @('init')
-}
-
-$null = Invoke-External git @('checkout', '-B', $DefaultBranch)
-
-Write-Host "Staging files..."
-$null = Invoke-External git @('add', '.')
-
-$hasChanges = $true
-& git diff --cached --quiet
-if ($LASTEXITCODE -eq 0) {
-  $hasChanges = $false
-}
-
-if ($hasChanges) {
-  try {
-    $null = Invoke-External git @('commit', '-m', 'Initialize public repository with docs, CI, and safety checks')
-  } catch {
-    $nameConfigured = $true
-    $emailConfigured = $true
-
-    & git config user.name *> $null
-    if ($LASTEXITCODE -ne 0) { $nameConfigured = $false }
-
-    & git config user.email *> $null
-    if ($LASTEXITCODE -ne 0) { $emailConfigured = $false }
-
-    if (-not $nameConfigured -or -not $emailConfigured) {
-      throw 'Git commit failed because user.name and/or user.email are not configured. Run: git config --global user.name "Your Name" and git config --global user.email "you@example.com"'
-    }
-
-    throw
+function Ensure-GitInitialized([string]$BranchName) {
+  if (-not (Test-GitRepoExists)) {
+    Write-Step 'Initializing git repository...'
+    Invoke-External 'git' @('init') | Out-Null
   }
-}
 
-$repoFull = "$Owner/$Repo"
-
-Write-Host "Checking whether repository $repoFull already exists..."
-$repoExistsResult = Invoke-ExternalCapture 'gh' @('repo', 'view', $repoFull, '--json', 'name')
-$repoExists = $false
-if ($repoExistsResult.ExitCode -eq 0) {
-  $repoExists = $true
-} else {
-  $repoError = ($repoExistsResult.StdErr + "`n" + $repoExistsResult.StdOut).Trim()
-  if ($repoError -match 'Could not resolve to a Repository' -or $repoError -match 'HTTP 404' -or $repoError -match 'not found') {
-    $repoExists = $false
+  $head = Invoke-ExternalCapture 'git' @('rev-parse', '--abbrev-ref', 'HEAD')
+  if ($head.ExitCode -ne 0 -or -not $head.StdOut.Trim()) {
+    Invoke-External 'git' @('checkout', '-B', $BranchName) | Out-Null
   } else {
-    throw "Unable to determine whether repository $repoFull exists. GitHub CLI said: $repoError"
+    $current = $head.StdOut.Trim()
+    if ($current -ne $BranchName) {
+      $branches = Invoke-ExternalCapture 'git' @('branch', '--list', $BranchName)
+      if ($branches.StdOut.Trim()) {
+        Invoke-External 'git' @('checkout', $BranchName) | Out-Null
+      } else {
+        Invoke-External 'git' @('checkout', '-B', $BranchName) | Out-Null
+      }
+    } else {
+      Write-Step "Already on branch '$BranchName'."
+    }
   }
 }
 
-if (-not $repoExists) {
-  Write-Host "Creating public repository $repoFull ..."
-  $null = Invoke-External gh @('repo', 'create', $repoFull, '--public', '--source', '.', '--remote', 'origin', '--push')
-} else {
-  Write-Host "Repository already exists. Ensuring origin and pushing..."
-  $remoteExists = $true
-  & git remote get-url origin *> $null
-  if ($LASTEXITCODE -ne 0) {
-    $remoteExists = $false
+function Commit-IfNeeded {
+  Write-Step 'Staging files...'
+  Invoke-External 'git' @('add', '.') | Out-Null
+
+  $status = Invoke-ExternalCapture 'git' @('status', '--porcelain')
+  if ($status.ExitCode -ne 0) {
+    throw 'Unable to determine git status.'
+  }
+  if (-not $status.StdOut.Trim()) {
+    Write-Step 'No changes to commit.'
+    return
   }
 
-  if (-not $remoteExists) {
-    $null = Invoke-External git @('remote', 'add', 'origin', "https://github.com/$repoFull.git")
-  }
-
-  $null = Invoke-External git @('push', '-u', 'origin', $DefaultBranch)
+  Ensure-GitIdentity
+  Invoke-External 'git' @('commit', '-m', 'Update extension, docs, and automation') | Out-Null
 }
 
-Write-Host "Applying branch protection to $DefaultBranch ..."
-$bodyObject = @{
-  required_status_checks = @{
-    strict   = $true
-    contexts = @('CI / validate')
+function Ensure-GitHubRepo([string]$RepoFull) {
+  Write-Step "Checking whether repository $RepoFull already exists..."
+  $view = Invoke-ExternalCapture 'gh' @('repo', 'view', $RepoFull, '--json', 'name')
+  if ($view.ExitCode -eq 0) {
+    Write-Step 'Repository already exists.'
+    return
   }
-  enforce_admins = $true
-  required_pull_request_reviews = @{
-    dismiss_stale_reviews           = $true
-    require_code_owner_reviews      = $false
-    required_approving_review_count = 1
-    require_last_push_approval      = $false
+
+  $combined = (($view.StdErr + "`n" + $view.StdOut).Trim())
+  if ($combined -match 'Could not resolve to a Repository' -or $combined -match 'not found' -or $combined -match 'HTTP 404') {
+    Write-Step 'Repository does not exist yet. Creating public repository...'
+    Invoke-External 'gh' @('repo', 'create', $RepoFull, '--public', '--source', '.', '--remote', 'origin', '--push') | Out-Null
+    return
   }
-  restrictions = $null
-  required_linear_history = $false
-  allow_force_pushes = $false
-  allow_deletions = $false
-  block_creations = $false
-  required_conversation_resolution = $true
-  lock_branch = $false
-  allow_fork_syncing = $false
+
+  throw "Unable to determine whether repository $RepoFull exists. GitHub CLI said: $combined"
 }
 
-$tempJson = Join-Path $env:TEMP "selection-search-extension-branch-protection.json"
-[System.IO.File]::WriteAllText($tempJson, ($bodyObject | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
-
-try {
-$null = Invoke-External gh @(
-    'api',
-    '--method', 'PUT',
-    '-H', 'Accept: application/vnd.github+json',
-    '-H', 'X-GitHub-Api-Version: 2026-03-10',
-    "/repos/$repoFull/branches/$DefaultBranch/protection",
-    '--input', $tempJson
-  )
-} finally {
-  if (Test-Path $tempJson) {
-    Remove-Item $tempJson -Force -ErrorAction SilentlyContinue
+function Ensure-OriginRemote([string]$RepoUrl) {
+  $remoteList = Invoke-ExternalCapture 'git' @('remote')
+  if ($remoteList.ExitCode -ne 0) {
+    throw 'Unable to inspect git remotes.'
+  }
+  $remotes = @($remoteList.StdOut -split "`r?`n" | Where-Object { $_.Trim() })
+  if ($remotes -contains 'origin') {
+    $originUrl = (Invoke-ExternalCapture 'git' @('remote', 'get-url', 'origin')).StdOut.Trim()
+    if ($originUrl -ne $RepoUrl) {
+      Write-Step 'Updating origin remote URL...'
+      Invoke-External 'git' @('remote', 'set-url', 'origin', $RepoUrl) | Out-Null
+    }
+  } else {
+    Write-Step 'Adding origin remote...'
+    Invoke-External 'git' @('remote', 'add', 'origin', $RepoUrl) | Out-Null
   }
 }
 
-Write-Host "Done. Repository URL: https://github.com/$repoFull"
+function Ensure-Push([string]$BranchName) {
+  Write-Step "Pushing branch '$BranchName' to origin..."
+  Invoke-External 'git' @('push', '-u', 'origin', $BranchName) | Out-Null
+}
+
+function Set-BranchProtection([string]$RepoFull, [string]$BranchName) {
+  Write-Step "Applying branch protection to $BranchName ..."
+  $bodyObject = @{
+    required_status_checks = @{
+      strict   = $true
+      contexts = @('CI / validate')
+    }
+    enforce_admins = $true
+    required_pull_request_reviews = @{
+      dismiss_stale_reviews           = $true
+      require_code_owner_reviews      = $false
+      required_approving_review_count = 1
+      require_last_push_approval      = $false
+    }
+    restrictions = $null
+    required_linear_history = $false
+    allow_force_pushes = $false
+    allow_deletions = $false
+    block_creations = $false
+    required_conversation_resolution = $true
+    lock_branch = $false
+    allow_fork_syncing = $false
+  }
+
+  $tempJson = Join-Path $env:TEMP 'selection-search-extension-branch-protection.json'
+  [System.IO.File]::WriteAllText($tempJson, ($bodyObject | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
+  try {
+    Invoke-External 'gh' @(
+      'api',
+      '--method', 'PUT',
+      '-H', 'Accept: application/vnd.github+json',
+      '-H', 'X-GitHub-Api-Version: 2022-11-28',
+      "/repos/$RepoFull/branches/$BranchName/protection",
+      '--input', $tempJson
+    ) | Out-Null
+  } finally {
+    if (Test-Path $tempJson) { Remove-Item $tempJson -Force }
+  }
+}
+
+$projectRoot = Get-ProjectRoot
+Set-Location $projectRoot
+
+Require-Command 'git'
+Require-Command 'gh'
+
+$repoFull = "$RepoOwner/$RepoName"
+$repoUrl = "https://github.com/$RepoOwner/$RepoName.git"
+
+Write-Step 'Checking GitHub authentication...'
+Invoke-External 'gh' @('auth', 'status') | Out-Null
+
+Invoke-SecretScan
+Invoke-ExtensionValidation
+Ensure-GitInitialized -BranchName $DefaultBranch
+Commit-IfNeeded
+Ensure-GitHubRepo -RepoFull $repoFull
+Ensure-OriginRemote -RepoUrl $repoUrl
+Ensure-Push -BranchName $DefaultBranch
+Set-BranchProtection -RepoFull $repoFull -BranchName $DefaultBranch
+
+Write-Host ''
+Write-Host 'Done.'
+Write-Host ("Repo URL: https://github.com/{0}/{1}" -f $RepoOwner, $RepoName)
